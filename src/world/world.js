@@ -103,6 +103,30 @@ function addWindow(scene, group, x, y, z, facing, width = 1.05, height = 1.1) {
   group.add(horizontal);
 }
 
+function addSideWindow(group, x, y, z, depth = 1.35, height = 0.95) {
+  const frame = material("windowFrame", 0xe0ded3, 0.72);
+  const glass = material("windowGlass", 0x607b83, 0.28, { metalness: 0.14, emissive: 0x17262b, emissiveIntensity: 0.12 });
+  const windowGroup = new THREE.Group();
+  const pane = new THREE.Mesh(new THREE.BoxGeometry(0.045, height, depth), glass);
+  windowGroup.add(pane);
+  for (const side of [-1, 1]) {
+    const trim = new THREE.Mesh(new THREE.BoxGeometry(0.13, height + 0.16, depth + 0.16), frame);
+    trim.position.x = 0;
+    trim.position.z = side * (depth / 2 + 0.045);
+    windowGroup.add(trim);
+  }
+  const top = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.09, depth + 0.2), frame);
+  top.position.y = height / 2 + 0.045;
+  const bottom = top.clone();
+  bottom.position.y = -height / 2 - 0.045;
+  windowGroup.add(top, bottom);
+  const mullion = new THREE.Mesh(new THREE.BoxGeometry(0.13, height, 0.055), frame);
+  windowGroup.add(mullion);
+  windowGroup.position.set(x, y, z);
+  windowGroup.rotation.y = Math.PI / 2;
+  group.add(windowGroup);
+}
+
 function addDoor(scene, group, x, y, z, color, facing = "front") {
   const door = new THREE.Group();
   const frame = material("doorFrame", 0xe0d7c9, 0.8);
@@ -234,7 +258,7 @@ function makeProceduralHouse(scene, index, x, z, colliders) {
   group.add(step);
 
   // Small side windows add depth while keeping the street facade legible.
-  addWindow(scene, group, width / 2 + 0.06, 2.0, 0, "front", 1.1, 1.0);
+  addSideWindow(group, width / 2 + 0.08, 2.0, 0, 1.35, 0.95);
   group.rotation.y = index % 4 === 2 ? Math.PI : 0;
   group.position.set(x, 0, z);
   scene.add(group);
@@ -383,7 +407,7 @@ function addTree(scene, x, z, size = 1, colliders = null) {
     material("treeLeavesC", 0x7b8462, 1)
   ];
   const trunk = makeBox(scene, "tree-trunk", x, 0, z, 0.35 * size, 2.0 * size, 0.35 * size, trunkMat, { solid: true, colliders });
-  const canopy1 = new THREE.Mesh(new THREE.IcosahedronGeometry(1.45 * size, 1), leaves[Math.floor(x * 0.7 + z * 0.4) % 3 + 3 < 0 ? 2 : Math.abs(Math.floor(x + z)) % 3]);
+  const canopy1 = new THREE.Mesh(new THREE.IcosahedronGeometry(1.45 * size, 1), leaves[Math.abs(Math.floor(x * 0.7 + z * 0.4)) % 3]);
   canopy1.position.set(x, 3.1 * size, z);
   canopy1.scale.set(1, 1.18, 1);
   canopy1.castShadow = true;
@@ -396,15 +420,17 @@ function addTree(scene, x, z, size = 1, colliders = null) {
   return trunk;
 }
 
-function addStreetLamp(scene, x, z, colliders = null) {
+function addStreetLamp(scene, x, z, colliders = null, lampHeads = []) {
   const pole = material("streetLampPole", 0x4b5353, 0.6, { metalness: 0.48 });
   const light = material("streetLampLight", 0xf0e4ba, 0.35, { emissive: 0x6d5832, emissiveIntensity: 0.42 });
   makeBox(scene, "street-lamp-post", x, 0, z, 0.16, 5.0, 0.16, pole, { solid: true, colliders });
   makeBox(scene, "street-lamp-arm", x + 0.7, 4.85, z, 1.4, 0.13, 0.13, pole);
   const head = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.22, 0.48), light);
+  head.name = "street-lamp-head";
   head.position.set(x + 1.25, 4.72, z);
   head.castShadow = true;
   scene.add(head);
+  lampHeads.push(head);
 }
 
 function addMailbox(scene, x, z, id, color) {
@@ -430,9 +456,9 @@ function addFence(scene, x, z, width, color = 0xd0ccbc) {
 function addSign(scene, colliders, interactables, showToast) {
   const metal = material("signMetal", 0x424b4d, 0.72, { metalness: 0.28 });
   const boardMat = material("signBoard", 0xd7ff76, 0.85, { emissive: 0x202d0e, emissiveIntensity: 0.16 });
-  makeBox(scene, "district-sign-post-left", -2.8, 0, 53.6, 0.18, 2.9, 0.18, metal);
-  makeBox(scene, "district-sign-post-right", 2.8, 0, 53.6, 0.18, 2.9, 0.18, metal);
-  makeBox(scene, "district-sign-board", 0, 2.0, 53.6, 6.0, 1.25, 0.22, boardMat);
+  makeBox(scene, "district-sign-post-left", 4.3, 0, 53.6, 0.18, 2.9, 0.18, metal);
+  makeBox(scene, "district-sign-post-right", 9.7, 0, 53.6, 0.18, 2.9, 0.18, metal);
+  makeBox(scene, "district-sign-board", 7.0, 2.0, 53.6, 6.0, 1.25, 0.22, boardMat);
 
   const canvas = document.createElement("canvas");
   canvas.width = 1024;
@@ -451,12 +477,12 @@ function addSign(scene, colliders, interactables, showToast) {
     new THREE.PlaneGeometry(5.72, 1.0),
     new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide })
   );
-  face.position.set(0, 2.0, 53.475);
+  face.position.set(7.0, 2.0, 53.475);
   scene.add(face);
 
   interactables.push({
     id: "district-sign",
-    x: 0,
+    x: 7.0,
     z: 51.5,
     range: 3.4,
     action() {
@@ -468,6 +494,7 @@ function addSign(scene, colliders, interactables, showToast) {
 export async function buildResidentialWorld(scene, { showToast = () => {} } = {}) {
   const colliders = [];
   const interactables = [];
+  const lampHeads = [];
   const optionalModels = await loadHousePack();
 
   scene.background = new THREE.Color(0xa8b8bf);
@@ -514,7 +541,6 @@ export async function buildResidentialWorld(scene, { showToast = () => {} } = {}
       const x = HOUSE_COLUMNS[col];
       const z = HOUSE_ROWS[row];
       const index = houseIndex++;
-      const roadZ = row === 0 ? -33 : row === 1 ? -11 : row === 2 ? 11 : row === 3 ? 33 : 33;
       const frontDirection = index % 3 === 1 ? -1 : 1;
       const driveway = material("driveway", 0x85877e, 0.98);
       makePlane(scene, "driveway", x, z + frontDirection * 5.65, 3.3, 5.0, driveway, 0.008);
@@ -534,7 +560,9 @@ export async function buildResidentialWorld(scene, { showToast = () => {} } = {}
         hedge.receiveShadow = true;
         scene.add(hedge);
       }
-      addFence(scene, x, z + 7.8 * frontDirection, 4.2, index % 2 ? 0xc8c3b6 : 0xbab7ac);
+      // Two short fence sections leave a clear path to the entrance.
+      addFence(scene, x - 3.2, z + 7.8 * frontDirection, 2.2, index % 2 ? 0xc8c3b6 : 0xbab7ac);
+      addFence(scene, x + 3.2, z + 7.8 * frontDirection, 2.2, index % 2 ? 0xc8c3b6 : 0xbab7ac);
       addMailbox(scene, x - 5.3, z + 6.1 * frontDirection, `H${String(index + 1).padStart(2, "0")}`, index % 2 ? 0x657b76 : 0x596d78);
 
       // One tree and a small flower bed per lot.
@@ -586,10 +614,10 @@ export async function buildResidentialWorld(scene, { showToast = () => {} } = {}
   }
 
   for (const x of VERTICAL_ROADS) {
-    for (const z of [-55, -22, 22, 48]) addStreetLamp(scene, x + 5.6, z, colliders);
+    for (const z of [-55, -22, 22, 48]) addStreetLamp(scene, x + 5.6, z, colliders, lampHeads);
   }
   for (const z of HORIZONTAL_ROADS) {
-    for (const x of [-54, -8, 8, 54]) addStreetLamp(scene, x, z + 5.4, colliders);
+    for (const x of [-54, -8, 8, 54]) addStreetLamp(scene, x, z + 5.4, colliders, lampHeads);
   }
 
   // A few benches, bins and parking bays give the street scale.
@@ -638,9 +666,7 @@ export async function buildResidentialWorld(scene, { showToast = () => {} } = {}
     update(time) {
       // Very subtle shimmer in street fixtures, not a distracting animation.
       const phase = 0.92 + Math.sin(time * 0.00055) * 0.035;
-      for (const object of scene.children) {
-        if (object.name === "street-lamp-head") object.material.emissiveIntensity = phase;
-      }
+      for (const head of lampHeads) head.material.emissiveIntensity = phase;
     },
     dispose() {
       // Shared materials and geometries are owned by the Three.js scene.
