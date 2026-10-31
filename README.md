@@ -8,6 +8,7 @@ A browser-based low-poly residential district built with Three.js and the standa
 - A road grid, asphalt, lane markings, raised curbs, sidewalks and parking bays.
 - 20 individual low-poly houses with varied silhouettes, roof styles, facades, porches, doors, windows and chimneys.
 - Small yards, fences, hedges, flowerbeds, mailboxes and trees.
+- Parked low-poly cars in marked bays and a low-poly tree/hill belt beyond the district edge.
 - Street lamps, benches, bins and a district entrance sign.
 - Per-house and prop collision boxes, plus district boundary walls.
 - Optional import of the supplied Blender house pack as a GLB file. If it is not present, the built-in procedural house set is used automatically.

@@ -304,16 +304,44 @@ function placeImportedHouse(scene, model, index, x, z, colliders) {
   group.name = `house-${String(index + 1).padStart(2, "0")}`;
   const instance = model.clone(true);
   instance.updateMatrixWorld(true);
+  const sourcePosition = instance.position.clone();
   let bounds = new THREE.Box3().setFromObject(instance);
   const size = bounds.getSize(new THREE.Vector3());
   const center = bounds.getCenter(new THREE.Vector3());
   const targetWidth = [9.2, 10.1, 9.4, 10.4, 9.6][index % 5];
   const targetDepth = [9.4, 8.7, 10.2, 9.5, 10.4][index % 5];
-  const scale = Math.min(targetWidth / Math.max(size.x, 0.01), targetDepth / Math.max(size.z, 0.01), 1.5);
+  const fitScale = Math.min(
+    targetWidth / Math.max(size.x, 0.01),
+    targetDepth / Math.max(size.z, 0.01),
+    1.5
+  );
 
-  instance.position.set(-center.x, -bounds.min.y, -center.z);
-  instance.scale.setScalar(scale);
+  // Keep each Blender object's authored scale. The source GLB stores the six
+  // roots in an off-centre layout, so fit the complete world transform together.
+  instance.position.set(
+    (sourcePosition.x - center.x) * fitScale,
+    (sourcePosition.y - bounds.min.y) * fitScale,
+    (sourcePosition.z - center.z) * fitScale
+  );
+  instance.scale.multiplyScalar(fitScale);
   instance.rotation.y = index % 4 === 2 ? Math.PI : 0;
+
+  // Give each placed house its own subtle facade tint without mutating templates.
+  const tint = PALETTE[index % PALETTE.length];
+  instance.traverse(object => {
+    if (!object.isMesh || !object.material) return;
+    if (Array.isArray(object.material)) {
+      object.material = object.material.map(sourceMaterial => {
+        const clone = sourceMaterial.clone();
+        clone.color?.setHex(tint);
+        return clone;
+      });
+    } else {
+      object.material = object.material.clone();
+      object.material.color?.setHex(tint);
+    }
+  });
+
   group.add(instance);
   group.position.set(x, 0, z);
   scene.add(group);
@@ -491,6 +519,79 @@ function addSign(scene, colliders, interactables, showToast) {
   });
 }
 
+function addParkedCar(scene, x, z, bodyColor, colliders, index) {
+  const body = material(`carBody-${bodyColor}`, bodyColor, 0.56, { metalness: 0.12 });
+  const glass = material("carGlass", 0x34454c, 0.24, { metalness: 0.16 });
+  const trim = material("carTrim", 0x343b3d, 0.8);
+  const headlights = material("carHeadlights", 0xd9d2b9, 0.35, {
+    emissive: 0x3b3524,
+    emissiveIntensity: 0.28
+  });
+  const taillights = material("carTaillights", 0x8d4038, 0.5, {
+    emissive: 0x240907,
+    emissiveIntensity: 0.18
+  });
+
+  makeBox(scene, `parked-car-${index}-body`, x, 0.34, z, 1.92, 0.72, 4.1, body, {
+    solid: true,
+    colliders
+  });
+  makeBox(scene, `parked-car-${index}-cabin`, x, 1.02, z - 0.12, 1.62, 0.74, 2.35, glass);
+
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(1.48, 0.11, 1.48), body);
+  roof.position.set(x, 1.79, z - 0.16);
+  roof.castShadow = true;
+  scene.add(roof);
+
+  const wheelGeometry = new THREE.CylinderGeometry(0.39, 0.39, 0.22, 10);
+  for (const side of [-1, 1]) {
+    for (const end of [-1, 1]) {
+      const wheel = new THREE.Mesh(wheelGeometry, trim);
+      wheel.rotation.z = Math.PI / 2;
+      wheel.position.set(x + side * 0.94, 0.43, z + end * 1.28);
+      wheel.castShadow = true;
+      scene.add(wheel);
+    }
+    makeBox(scene, `car-headlamp-${index}`, x + side * 0.64, 0.66, z + 1.96, 0.28, 0.19, 0.055, headlights);
+    makeBox(scene, `car-taillamp-${index}`, x + side * 0.64, 0.66, z - 1.96, 0.28, 0.19, 0.055, taillights);
+  }
+}
+
+function addDistantLandscape(scene) {
+  const hillColors = [0x788674, 0x82907b, 0x707f72, 0x89917c];
+
+  for (let i = 0; i < 18; i += 1) {
+    const angle = (i / 18) * Math.PI * 2;
+    const radius = 96 + (i % 3) * 5;
+    const color = hillColors[i % hillColors.length];
+    const hill = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(1, 1),
+      material(`distantHill-${color}`, color, 1)
+    );
+    const scale = 13 + (i % 4) * 3.4;
+    hill.position.set(Math.cos(angle) * radius, 1.2, Math.sin(angle) * radius);
+    hill.scale.set(scale * 1.6, scale * 0.68, scale * 1.15);
+    hill.rotation.y = angle * 0.7;
+    hill.receiveShadow = true;
+    scene.add(hill);
+  }
+
+  // A sparse tree belt gives the neighborhood a natural silhouette beyond
+  // the playable district boundary without adding unnecessary collision checks.
+  const perimeterTrees = [];
+  for (let x = -72; x <= 72; x += 12) {
+    perimeterTrees.push([x, -77], [x, 77]);
+  }
+  for (let z = -65; z <= 65; z += 13) {
+    perimeterTrees.push([-77, z], [77, z]);
+  }
+
+  perimeterTrees.forEach(([x, z], index) => {
+    if (Math.abs(x) < 31 && Math.abs(z) < 31) return;
+    addTree(scene, x, z, 0.9 + (index % 4) * 0.08, null);
+  });
+}
+
 export async function buildResidentialWorld(scene, { showToast = () => {} } = {}) {
   const colliders = [];
   const interactables = [];
@@ -631,23 +732,39 @@ export async function buildResidentialWorld(scene, { showToast = () => {} } = {}
     makeBox(scene, "street-bin", x + 1.5, 0, z + 0.7, 0.48, 0.84, 0.48, binMat, { solid: true, colliders });
   }
 
+  // Parked cars occupy a few marked curbside bays and add street scale.
+  const parkedCars = [
+    [-31.9, -44, 0x87969a],
+    [-20.1, 0, 0x9b8772],
+    [20.1, 44, 0x687c78],
+    [31.9, -22, 0xb2a99a],
+    [-31.9, 22, 0x788b9b],
+    [20.1, -44, 0xa17a6c]
+  ];
+  parkedCars.forEach(([x, z, color], index) => {
+    addParkedCar(scene, x, z, color, colliders, index + 1);
+  });
+
   // Parking spaces run alongside the outer edges of the main streets.
   const parkingLine = material("parkingPaint", 0xb3b5a9, 0.96);
+  const parkingSurface = material("parkingSurface", 0x777b73, 1);
   for (const x of [-26, 26]) {
     for (const z of [-44, -22, 0, 22, 44]) {
       for (const side of [-1, 1]) {
         const bayX = x + side * 5.9;
+        makePlane(scene, "parking-bay-surface", bayX, z, 2.45, 5.65, parkingSurface, 0.039);
         const mark = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.018, 5.1), parkingLine);
-        mark.position.set(bayX, 0.028, z);
+        mark.position.set(bayX, 0.052, z);
         scene.add(mark);
         const endMark = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.018, 0.1), parkingLine);
-        endMark.position.set(x + side * 4.9, 0.028, z - 2.55);
+        endMark.position.set(x + side * 4.9, 0.052, z - 2.55);
         scene.add(endMark);
       }
     }
   }
 
   addSign(scene, colliders, interactables, showToast);
+  addDistantLandscape(scene);
 
   // A low, tree-lined perimeter keeps the player inside the district.
   for (const x of [-63, 63]) {
