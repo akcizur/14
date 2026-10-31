@@ -1,22 +1,18 @@
-# FPS Foundation
+# Severní čtvrť — FPS World
 
-A small, reusable first-person controller starter built around the movement architecture used by DFLAT. It intentionally contains no DFLAT level, mission, model library, game menu, story, or original game UI.
+A browser-based low-poly residential district built with Three.js and the standalone FPS controller in this repository.
 
-## Included
+## World
 
-- First-person camera controller with smooth yaw/pitch synchronization, walking bob, breathing, subtle lean and strafe roll.
-- WASD and arrow-key movement, sprint, jump and gravity.
-- Radius-based player collision against axis-aligned X/Z collider rectangles, with wall sliding.
-- Optional world bounds, spawn positioning and proximity interaction callbacks.
-- Pointer Lock mouse look.
-- Touch movement joystick, separate touch-look surface and jump/run/interact/pause buttons.
-- Gamepad left-stick movement, right-stick look, jump, interact, sprint and pause.
-- Minimal Three.js test scene with replaceable geometry.
-- Node tests for movement, collisions, diagonal speed, jumping and pause state.
+- 20 separate residential lots arranged in a 4 × 5 district.
+- A road grid, asphalt, lane markings, raised curbs, sidewalks and parking bays.
+- 20 individual low-poly houses with varied silhouettes, roof styles, facades, porches, doors, windows and chimneys.
+- Small yards, fences, hedges, flowerbeds, mailboxes and trees.
+- Street lamps, benches, bins and a district entrance sign.
+- Per-house and prop collision boxes, plus district boundary walls.
+- Optional import of the supplied Blender house pack as a GLB file. If it is not present, the built-in procedural house set is used automatically.
 
-The player is a first-person camera with a collision radius; there is no visible third-person body or character mesh in this foundation.
-
-## Run locally
+## Run
 
 Requirements: Node.js 20 or newer.
 
@@ -25,17 +21,12 @@ npm install
 npm run dev
 ~~~
 
-Build the static site:
-
-~~~sh
-npm run build
-npm run preview
-~~~
-
-Run controller tests:
+Build and preview the static site:
 
 ~~~sh
 npm test
+npm run build
+npm run preview
 ~~~
 
 ## Controls
@@ -45,36 +36,41 @@ npm test
 | W / A / S / D or arrows | Move |
 | Shift | Sprint |
 | Space | Jump |
-| Mouse | Look (click the scene to capture the pointer) |
-| E | Interact with the nearest enabled object in range |
+| Mouse | Look (click the world to capture the pointer) |
+| E | Interact with nearby home markers / district sign |
 | Escape | Pause / resume |
-| Touch | Left joystick to move, drag the right side to look, action buttons |
+| Touch | Left joystick to move, drag right side to look, action buttons |
 | Gamepad | Left stick move, right stick look, A jump, X interact, triggers sprint, Start / B pause |
 
-## Project structure
+## Optional Blender model pack
+
+Place the exported model at:
+
+~~~text
+public/models/LowPoly_House_20_Pack_Selected.glb
+~~~
+
+The GLB should expose scene roots named `house_1`, `house_2`, etc. The world will detect and reuse the available variants. The built-in procedural houses remain available as a fallback, so the world does not require the asset to start.
+
+## Project layout
 
 ~~~text
 src/
   core/
     player-controller.js
     input-controller.js
+  world/
+    world.js
   main.js
+public/
+  models/
+    LowPoly_House_20_Pack_Selected.glb  (optional)
 tests/
   player-controller.test.js
-index.html
-styles.css
-vite.config.js
 ~~~
 
-## Connecting a new world
-
-1. Build a Three.js scene and add its meshes to the scene in src/main.js.
-2. For every solid rectangular obstacle, add an X/Z collider with minX, maxX, minZ and maxZ.
-3. Pass the collider array, optional world bounds and interaction objects to createPlayerController.
-4. Keep the controller and input adapter independent from level construction.
-
-The controller accepts a Three.js camera and does not create world geometry itself.
+The movement controller is kept separate from the world builder so another level can reuse the same FPS movement, touch, keyboard, mouse and gamepad input.
 
 ## Source relationship
 
-The movement feel and first-person architecture are based on the player controller and multi-device input approach in [akcizur/DFLAT](https://github.com/akcizur/DFLAT). This repository is a clean extraction for a new project, not a copy of the DFLAT game.
+The first-person movement architecture is based on the approach in [akcizur/DFLAT](https://github.com/akcizur/DFLAT). This repository is a reusable controller and test world, not the DFLAT game.
