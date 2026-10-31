@@ -51,7 +51,7 @@ Place the exported model at:
 public/models/LowPoly_House_20_Pack_Selected.glb
 ~~~
 
-The GLB should expose scene roots named `house_1`, `house_2`, etc. The world will detect and reuse the available variants. The built-in procedural houses remain available as a fallback, so the world does not require the asset to start.
+The supplied pack exports six scene roots named `house_1`, `house_2`, `house_3`, `house_4`, `house_6` and `house_8`. The world reuses these six authored variants across all twenty lots, fits the source transforms to a consistent house footprint, grounds each model and applies a per-lot facade tint. The built-in procedural houses remain available as a fallback, so the world starts even when the GLB is not present. The GLB is an optional local asset and must be copied to the path above before it can appear in the deployed world.
 
 ## Project layout
 
