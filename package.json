@@ -1,0 +1,16 @@
+{
+  "name": "fps-foundation",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Reusable first-person controller foundation extracted from DFLAT gameplay architecture.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test"
+  },
+  "dependencies": { "three": "0.169.0" },
+  "devDependencies": { "vite": "6.4.5" },
+  "engines": { "node": ">=20.0.0" }
+}
