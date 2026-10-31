@@ -110,7 +110,7 @@ function addSideWindow(group, x, y, z, depth = 1.35, height = 0.95) {
   const pane = new THREE.Mesh(new THREE.BoxGeometry(0.045, height, depth), glass);
   windowGroup.add(pane);
   for (const side of [-1, 1]) {
-    const trim = new THREE.Mesh(new THREE.BoxGeometry(0.13, height + 0.16, depth + 0.16), frame);
+    const trim = new THREE.Mesh(new THREE.BoxGeometry(0.13, height + 0.16, 0.13), frame);
     trim.position.x = 0;
     trim.position.z = side * (depth / 2 + 0.045);
     windowGroup.add(trim);
