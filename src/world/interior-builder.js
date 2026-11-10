@@ -6,7 +6,7 @@ import { createDoorSpawns } from "../scenes/door-spawns.js";
 export function buildEmptyInterior({
   id, centerZ, frontSide, wallColor = 0xd0ccc0,
   floorColor = 0x8c8980, doorColor = 0x665649,
-  streetSpawnKey, onExit = () => {}
+  doorOpenAngle = -1.62, streetSpawnKey, onExit = () => {}
 }) {
   const group = new THREE.Group();
   group.name = "scene-" + id;
@@ -39,7 +39,9 @@ export function buildEmptyInterior({
 
   const door = createDoor(group, colliders, {
     id: id + "-exit-door", x: 0, z: frontZ,
-    rotationY: frontSide < 0 ? Math.PI : 0, color: doorColor
+    rotationY: frontSide < 0 ? Math.PI : 0,
+    color: doorColor,
+    openAngle: doorOpenAngle
   });
   const doorSpawns = createDoorSpawns({ doorZ: frontZ, frontSide });
 
