@@ -48,27 +48,27 @@ test("exterior facade windows sit on the outside face and retain solid collision
   assert.ok(houseAWindow);
   assert.ok(houseBWindow);
 
-  const aGlass = street.group.getObjectByName("house-a-front-wall-left-glazing-0");
-  const bGlass = street.group.getObjectByName("house-b-front-wall-left-glazing-0");
-  assert.ok(aGlass && bGlass);
-  assert.ok(street.colliders.some(item => item.name === aGlass.name));
-  assert.ok(street.colliders.some(item => item.name === bGlass.name));
+  const glazingColliders = street.colliders.filter(item => item.name.includes("-glazing-"));
+  assert.ok(glazingColliders.some(item => item.name === "house-a-front-wall-left-glazing-0"));
+  assert.ok(glazingColliders.some(item => item.name === "house-b-front-wall-left-glazing-0"));
+  assert.ok(glazingColliders.some(item => item.name === "house-a-rear-wall-glazing-0"));
+  assert.ok(glazingColliders.some(item => item.name === "house-b-rear-wall-glazing-0"));
 
-  const aRearGlass = street.group.getObjectByName("house-a-rear-wall-glazing-0");
-  const bRearGlass = street.group.getObjectByName("house-b-rear-wall-glazing-0");
-  assert.ok(aRearGlass && bRearGlass);
-  assert.ok(street.colliders.some(item => item.name === aRearGlass.name));
-  assert.ok(street.colliders.some(item => item.name === bRearGlass.name));
-
-  const aWindow = street.group.children.find(item =>
-    item.isGroup && item.position.x === -3.55 && Math.abs(item.position.z - (-12 + 0.135)) < 1e-9
+  const findWindow = (x, z) => street.group.children.find(item =>
+    item.isGroup && item.position.x === x && Math.abs(item.position.z - z) < 1e-9
   );
-  const bWindow = street.group.children.find(item =>
-    item.isGroup && item.position.x === -3.55 && Math.abs(item.position.z - (12 - 0.135)) < 1e-9
-  );
-  assert.ok(aWindow && bWindow);
+  const aWindow = findWindow(-3.55, -12 + 0.135);
+  const bWindow = findWindow(-3.55, 12 - 0.135);
+  const aRearWindow = findWindow(-3.5, -22 - 0.135);
+  const bRearWindow = findWindow(-3.5, 22 + 0.135);
+  assert.ok(aWindow && bWindow && aRearWindow && bRearWindow);
+  for (const windowGroup of [aWindow, bWindow, aRearWindow, bRearWindow]) {
+    assert.ok(windowGroup.children.some(child => child.name === "window-glass-pane"));
+  }
   assert.equal(aWindow.rotation.y, 0);
   assert.equal(bWindow.rotation.y, Math.PI);
+  assert.equal(aRearWindow.rotation.y, Math.PI);
+  assert.equal(bRearWindow.rotation.y, 0);
 });
 
 test("interior front and rear windows match the two facade openings", () => {
