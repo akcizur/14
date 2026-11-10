@@ -35,10 +35,28 @@ export function buildEmptyInterior({
   });
 
   const doorGap = 1.32;
-  const segmentWidth = (width - doorGap) / 2;
-  addBox(group, colliders, id + "-front-wall-left", -doorGap / 2 - segmentWidth / 2, 0, frontZ, segmentWidth, wallHeight, 0.24, wall, true);
-  addBox(group, colliders, id + "-front-wall-right", doorGap / 2 + segmentWidth / 2, 0, frontZ, segmentWidth, wallHeight, 0.24, wall, true);
+  const frontWindowWidth = 1.75, frontWindowHeight = 1.15, frontWindowY = 1.85;
+  const frontWindowOpening = centerX => ({
+    minX: centerX - frontWindowWidth / 2,
+    maxX: centerX + frontWindowWidth / 2,
+    minY: frontWindowY - frontWindowHeight / 2,
+    maxY: frontWindowY + frontWindowHeight / 2
+  });
+  addWallWithOpenings(group, colliders, id + "-front-wall-left", {
+    minX: -halfW, maxX: -doorGap / 2, z: frontZ,
+    thickness: 0.24, height: wallHeight, material: wall,
+    openings: [frontWindowOpening(-3.55)]
+  });
+  addWallWithOpenings(group, colliders, id + "-front-wall-right", {
+    minX: doorGap / 2, maxX: halfW, z: frontZ,
+    thickness: 0.24, height: wallHeight, material: wall,
+    openings: [frontWindowOpening(3.55)]
+  });
   addBox(group, null, id + "-front-lintel", 0, 2.2, frontZ, doorGap, 0.85, 0.24, wall);
+  const frontWindowZ = frontZ - frontSide * 0.135;
+  const frontWindowRotation = frontSide > 0 ? Math.PI : 0;
+  addWindow(group, -3.55, frontWindowY, frontWindowZ, frontWindowWidth, frontWindowHeight, frontWindowRotation);
+  addWindow(group, 3.55, frontWindowY, frontWindowZ, frontWindowWidth, frontWindowHeight, frontWindowRotation);
 
   const baseboard = makeMaterial(0xb5b0a4);
   addBox(group, null, id + "-baseboard-left", -halfW + 0.25, 0, centerZ, 0.09, 0.18, depth - 0.4, baseboard);
