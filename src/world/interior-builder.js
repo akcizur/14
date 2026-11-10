@@ -61,6 +61,9 @@ export function buildEmptyInterior({
   const baseboard = makeMaterial(0xb5b0a4);
   addBox(group, null, id + "-baseboard-left", -halfW + 0.25, 0, centerZ, 0.09, 0.18, depth - 0.4, baseboard);
   addBox(group, null, id + "-baseboard-right", halfW - 0.25, 0, centerZ, 0.09, 0.18, depth - 0.4, baseboard);
+  addBox(group, null, id + "-baseboard-front-left", -3.33, 0, frontZ - frontSide * 0.135, 5.34, 0.18, 0.09, baseboard);
+  addBox(group, null, id + "-baseboard-front-right", 3.33, 0, frontZ - frontSide * 0.135, 5.34, 0.18, 0.09, baseboard);
+  addBox(group, null, id + "-baseboard-rear", 0, 0, rearZ + frontSide * 0.135, width, 0.18, 0.09, baseboard);
   const rearWindowZ = rearZ + frontSide * 0.135;
   const rearWindowRotation = frontSide < 0 ? Math.PI : 0;
   addWindow(group, -3.5, 1.65, rearWindowZ, 1.8, 1.15, rearWindowRotation);
