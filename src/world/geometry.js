@@ -25,12 +25,66 @@ export function addPlane(group, name, x, z, width, depth, material, y = 0) {
   group.add(mesh);
   return mesh;
 }
+
+/**
+ * Builds a wall segment on the X/Z plane with real rectangular openings.
+ * The glass itself remains a collision surface so the player cannot walk
+ * through a window while the wall geometry no longer hides the glazing.
+ */
+export function addWallWithOpenings(group, colliders, name, {
+  minX, maxX, z, thickness, height, material, openings = []
+}) {
+  const values = [minX, maxX, z, thickness, height];
+  if (!values.every(Number.isFinite) || maxX <= minX || thickness <= 0 || height <= 0) {
+    throw new TypeError("addWallWithOpenings requires valid wall dimensions.");
+  }
+
+  const sorted = [...openings].sort((a, b) => a.minX - b.minX);
+  let cursor = minX;
+  const addSection = (sectionName, x1, x2, y1, y2) => {
+    const sectionWidth = x2 - x1, sectionHeight = y2 - y1;
+    if (sectionWidth <= 0 || sectionHeight <= 0) return;
+    addBox(
+      group, colliders, sectionName,
+      (x1 + x2) / 2, y1, z,
+      sectionWidth, sectionHeight, thickness, material, true
+    );
+  };
+
+  sorted.forEach((opening, index) => {
+    const { minX: openingMinX, maxX: openingMaxX, minY, maxY } = opening;
+    if (![openingMinX, openingMaxX, minY, maxY].every(Number.isFinite)
+      || openingMinX < cursor || openingMaxX <= openingMinX
+      || minY < 0 || maxY <= minY || maxY > height
+      || openingMaxX > maxX) {
+      throw new RangeError("Invalid or overlapping wall opening in " + name + ".");
+    }
+
+    addSection(name + "-left-" + index, cursor, openingMinX, 0, height);
+    addSection(name + "-sill-" + index, openingMinX, openingMaxX, 0, minY);
+    addSection(name + "-lintel-" + index, openingMinX, openingMaxX, maxY, height);
+
+    colliders?.push({
+      name: name + "-glazing-" + index,
+      minX: openingMinX,
+      maxX: openingMaxX,
+      minZ: z - thickness / 2,
+      maxZ: z + thickness / 2,
+      enabled: true
+    });
+    cursor = openingMaxX;
+  });
+
+  addSection(name + "-right", cursor, maxX, 0, height);
+}
+
 export function addWindow(group, x, y, z, width = 1.5, height = 1.15, rotationY = 0) {
   const windowGroup = new THREE.Group();
   windowGroup.position.set(x, y, z);
   windowGroup.rotation.y = rotationY;
   const glass = makeMaterial(0x829ba0, {
-    roughness: 0.26, metalness: 0.12, emissive: 0x1a2a2d, emissiveIntensity: 0.12
+    roughness: 0.26, metalness: 0.12, transparent: true, opacity: 0.78,
+    depthWrite: false, emissive: 0x1a2a2d, emissiveIntensity: 0.12
   });
   const trim = makeMaterial(0xe1ded2, { roughness: 0.78 });
   const pane = new THREE.Mesh(new THREE.BoxGeometry(width, height, 0.055), glass);
