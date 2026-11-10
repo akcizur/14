@@ -20,7 +20,7 @@ export function createGableRoofLayout({
   }
 
   const panelDepth = halfDepth + panelOverhang;
-  const panelOffset = halfDepth / 2 + 0.05;
+  const panelOffset = panelDepth / 2;
   const panelCenterY = wallHeight + Math.tan(pitch) * (halfDepth - panelOffset);
   const ridgeY = wallHeight + Math.tan(pitch) * halfDepth;
 
