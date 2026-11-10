@@ -145,3 +145,24 @@ test("transitions are rejected while paused or already transitioning", async () 
   assert.equal(await manager.transition("houseA", "houseA", "entry"), false);
   assert.deepEqual(opened, []);
 });
+
+
+test("failed direct activation restores the previous world and player spawn", () => {
+  const { manager, controller } = createFixture();
+  manager.activate("street", "start");
+  controller.setSpawn({ x: 2, z: 3, yaw: 0.5, pitch: -0.2 });
+
+  const houseA = manager.locations.get("houseA");
+  houseA.spawns.entry.blocked = true;
+
+  assert.throws(
+    () => manager.activate("houseA", "entry"),
+    /Invalid or obstructed spawn/
+  );
+
+  assert.equal(manager.currentId, "street");
+  assert.equal(manager.locations.get("street").group.visible, true);
+  assert.equal(houseA.group.visible, false);
+  assert.equal(controller.currentWorld.colliders[0], "street-colliders");
+  assert.deepEqual(controller.player, { x: 2, z: 3, yaw: 0.5, pitch: -0.2 });
+});
