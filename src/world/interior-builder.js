@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { addBox, addWindow, makeMaterial } from "./geometry.js";
+import { addBox, addWallWithOpenings, addWindow, makeMaterial } from "./geometry.js";
 import { createDoor } from "./interactions/door-transition.js";
 import { createDoorSpawns } from "../scenes/door-spawns.js";
 
@@ -23,7 +23,16 @@ export function buildEmptyInterior({
   addBox(group, null, id + "-ceiling", 0, wallHeight, centerZ, width, 0.16, depth, ceiling);
   addBox(group, colliders, id + "-left-wall", -halfW + 0.12, 0, centerZ, 0.24, wallHeight, depth, wall, true);
   addBox(group, colliders, id + "-right-wall", halfW - 0.12, 0, centerZ, 0.24, wallHeight, depth, wall, true);
-  addBox(group, colliders, id + "-rear-wall", 0, 0, rearZ, width, wallHeight, 0.24, wall, true);
+  addWallWithOpenings(group, colliders, id + "-rear-wall", {
+    minX: -halfW, maxX: halfW, z: rearZ,
+    thickness: 0.24, height: wallHeight, material: wall,
+    openings: [-3.5, 3.5].map(centerX => ({
+      minX: centerX - 0.9,
+      maxX: centerX + 0.9,
+      minY: 1.65 - 0.575,
+      maxY: 1.65 + 0.575
+    }))
+  });
 
   const doorGap = 1.32;
   const segmentWidth = (width - doorGap) / 2;
@@ -34,8 +43,10 @@ export function buildEmptyInterior({
   const baseboard = makeMaterial(0xb5b0a4);
   addBox(group, null, id + "-baseboard-left", -halfW + 0.25, 0, centerZ, 0.09, 0.18, depth - 0.4, baseboard);
   addBox(group, null, id + "-baseboard-right", halfW - 0.25, 0, centerZ, 0.09, 0.18, depth - 0.4, baseboard);
-  addWindow(group, -3.5, 1.65, rearZ + frontSide * 0.14, 1.8, 1.15, frontSide > 0 ? Math.PI : 0);
-  addWindow(group, 3.5, 1.65, rearZ + frontSide * 0.14, 1.8, 1.15, frontSide > 0 ? Math.PI : 0);
+  const rearWindowZ = rearZ + frontSide * 0.135;
+  const rearWindowRotation = frontSide < 0 ? Math.PI : 0;
+  addWindow(group, -3.5, 1.65, rearWindowZ, 1.8, 1.15, rearWindowRotation);
+  addWindow(group, 3.5, 1.65, rearWindowZ, 1.8, 1.15, rearWindowRotation);
 
   const door = createDoor(group, colliders, {
     id: id + "-exit-door", x: 0, z: frontZ,
