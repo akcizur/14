@@ -9,6 +9,10 @@ export function createDoorSpawns({
   if (!Number.isFinite(doorZ) || ![-1, 1].includes(frontSide)) {
     throw new TypeError("createDoorSpawns requires doorZ and frontSide (-1 or 1).");
   }
+  if (![outsideDistance, insideDistance].every(Number.isFinite)
+    || outsideDistance <= 0 || insideDistance <= 0) {
+    throw new RangeError("Door spawn distances must be positive finite numbers.");
+  }
 
   return {
     outside: {
