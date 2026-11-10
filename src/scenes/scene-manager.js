@@ -99,7 +99,7 @@ export class SceneManager {
       await door.animateOpen(650);
       this.beginMotion();
 
-      await this.animatePassage(previousSpawn, targetSpawn, switchWorld, 620);
+      await this.animatePassage(previousSpawn, targetSpawn, switchWorld, 620, door);
 
       if (!worldSwitched) switchWorld();
       if (!this.controller.setSpawn(targetSpawn)) {
@@ -134,7 +134,7 @@ export class SceneManager {
     this.fadeElement?.classList.remove("is-motion", "is-visible");
   }
 
-  animatePassage(from, to, onMidpoint, duration = 620) {
+  animatePassage(from, to, onMidpoint, duration = 620, door = null) {
     const reducedMotion = typeof window !== "undefined"
       && (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false);
     const frameRequest = typeof requestAnimationFrame === "function"
@@ -154,12 +154,65 @@ export class SceneManager {
       return finishImmediately();
     }
 
+    // Resolve the actual doorway from the door assembly. The path is split
+    // into an alignment leg, an exact threshold crossing and the destination
+    // leg, so a diagonal interaction can never cut through a jamb or wall.
+    const assemblyPosition = door?.pivot?.parent?.position;
+    const doorX = Number.isFinite(assemblyPosition?.x)
+      ? assemblyPosition.x
+      : (from.x + to.x) / 2;
+    const doorZ = Number.isFinite(assemblyPosition?.z)
+      ? assemblyPosition.z
+      : (from.z + to.z) / 2;
+    const sourceSide = Math.sign(from.z - doorZ)
+      || -Math.sign(to.z - doorZ)
+      || -1;
+    const approach = { x: doorX, z: doorZ + sourceSide * 0.72 };
+    const threshold = { x: doorX, z: doorZ };
+    const segments = [
+      { start: from, end: approach },
+      { start: approach, end: threshold },
+      { start: threshold, end: to }
+    ].map(segment => ({
+      ...segment,
+      length: Math.hypot(
+        segment.end.x - segment.start.x,
+        segment.end.z - segment.start.z
+      )
+    }));
+    const alignmentLength = segments[0].length;
+    const approachLength = segments[1].length;
+    const crossingDistance = alignmentLength + approachLength;
+    const totalDistance = segments.reduce((sum, segment) => sum + segment.length, 0);
+
+    const yawStart = Number.isFinite(from.yaw) ? from.yaw : 0;
+    const yawEnd = Number.isFinite(to.yaw) ? to.yaw : yawStart;
     const yawDelta = Math.atan2(
-      Math.sin((to.yaw ?? from.yaw) - (from.yaw ?? 0)),
-      Math.cos((to.yaw ?? from.yaw) - (from.yaw ?? 0))
+      Math.sin(yawEnd - yawStart),
+      Math.cos(yawEnd - yawStart)
     );
+    const pitchStart = Number.isFinite(from.pitch) ? from.pitch : -0.04;
+    const pitchEnd = Number.isFinite(to.pitch) ? to.pitch : pitchStart;
     const startTime = performance.now();
     let crossed = false;
+
+    function positionAt(distance) {
+      let remaining = Math.max(0, distance);
+      for (let index = 0; index < segments.length; index += 1) {
+        const segment = segments[index];
+        if (remaining <= segment.length || index === segments.length - 1) {
+          const amount = segment.length > 1e-8
+            ? Math.max(0, Math.min(1, remaining / segment.length))
+            : 1;
+          return {
+            x: segment.start.x + (segment.end.x - segment.start.x) * amount,
+            z: segment.start.z + (segment.end.z - segment.start.z) * amount
+          };
+        }
+        remaining -= segment.length;
+      }
+      return { x: to.x, z: to.z };
+    }
 
     return new Promise((resolve, reject) => {
       const frame = now => {
@@ -168,26 +221,36 @@ export class SceneManager {
           const eased = progress < 0.5
             ? 4 * progress * progress * progress
             : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+          const travelled = totalDistance * eased;
+          const yaw = yawStart + yawDelta * eased;
+          const pitch = pitchStart + (pitchEnd - pitchStart) * eased;
 
-          if (!crossed && progress >= 0.5) {
+          // Place the camera on the exact door plane before swapping worlds.
+          // The same frame then continues into the destination room.
+          if (!crossed && travelled >= crossingDistance) {
+            if (!setPose({ x: threshold.x, z: threshold.z, yaw, pitch })) {
+              throw new Error("Unable to align the player with the doorway.");
+            }
             onMidpoint();
             crossed = true;
           }
 
-          const pose = {
-            x: from.x + (to.x - from.x) * eased,
-            z: from.z + (to.z - from.z) * eased,
-            yaw: (from.yaw ?? 0) + yawDelta * eased,
-            pitch: (from.pitch ?? -0.04)
-              + ((to.pitch ?? -0.04) - (from.pitch ?? -0.04)) * eased
-          };
-
-          if (!setPose(pose)) {
+          const position = positionAt(travelled);
+          if (!setPose({ ...position, yaw, pitch })) {
             throw new Error("Door passage animation could not update the player pose.");
           }
 
           if (progress < 1) frameRequest(frame);
-          else resolve();
+          else {
+            if (!crossed) {
+              if (!setPose({ x: threshold.x, z: threshold.z, yaw, pitch })) {
+                throw new Error("Unable to align the player with the doorway.");
+              }
+              onMidpoint();
+              crossed = true;
+            }
+            resolve();
+          }
         } catch (error) {
           reject(error);
         }

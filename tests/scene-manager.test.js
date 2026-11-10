@@ -224,3 +224,53 @@ test("door transition moves through the open doorway and switches worlds mid-pas
   assert.equal(controller.player.z, -13.6);
   assert.equal(manager.currentId, "houseA");
 });
+
+test("side approach is aligned to the door opening before the scene switches", async () => {
+  const { manager, controller } = createFixture();
+  const door = manager.locations.get("street").doors.houseA;
+  door.pivot = { parent: { position: { x: 0, z: -12 } } };
+
+  const frames = [];
+  const originalRaf = globalThis.requestAnimationFrame;
+  globalThis.requestAnimationFrame = callback => {
+    frames.push(callback);
+    return frames.length;
+  };
+
+  const observations = [];
+  let switched = false;
+  let midpoint = null;
+  controller.setTransitionPose = pose => {
+    Object.assign(controller.player, pose);
+    observations.push({ x: pose.x, z: pose.z, switched });
+    return true;
+  };
+
+  const from = { x: 2, z: -10.2, yaw: 0, pitch: -0.04 };
+  const to = { x: 0, z: -13.6, yaw: 0, pitch: -0.04 };
+  const start = performance.now();
+  try {
+    const transition = manager.animatePassage(from, to, () => {
+      midpoint = { x: controller.player.x, z: controller.player.z };
+      switched = true;
+    }, 620, door);
+
+    for (const offset of [0, 100, 200, 300, 400, 500, 620]) {
+      const nextFrame = frames.shift();
+      assert.equal(typeof nextFrame, "function", "animation should schedule the next frame");
+      nextFrame(start + offset);
+    }
+    await transition;
+  } finally {
+    if (originalRaf) globalThis.requestAnimationFrame = originalRaf;
+    else delete globalThis.requestAnimationFrame;
+  }
+
+  assert.deepEqual(midpoint, { x: 0, z: -12 });
+  const beforeCrossing = observations.filter(entry => !entry.switched);
+  assert.ok(beforeCrossing.every(entry => entry.z >= -12 - 1e-9));
+  const afterCrossing = observations.filter(entry => entry.switched);
+  assert.ok(afterCrossing.some(entry => entry.z < -12));
+  assert.equal(controller.player.x, 0);
+  assert.equal(controller.player.z, -13.6);
+});
