@@ -1,17 +1,17 @@
-# Severní čtvrť — FPS World
+# 14 — Two-house FPS world
 
-A browser-based low-poly residential district built with Three.js and the standalone FPS controller in this repository.
+A small first-person Three.js environment built around one street, two opposing houses and two empty interiors.
 
-## World
+## Current world
 
-- 20 separate residential lots arranged in a 4 × 5 district.
-- A road grid, asphalt, lane markings, raised curbs, sidewalks and parking bays.
-- 20 individual low-poly houses with varied silhouettes, roof styles, facades, porches, doors, windows and chimneys.
-- Small yards, fences, hedges, flowerbeds, mailboxes and trees.
-- Parked low-poly cars in marked bays and a low-poly tree/hill belt beyond the district edge.
-- Street lamps, benches, bins and a district entrance sign.
-- Per-house and prop collision boxes, plus district boundary walls.
-- Optional import of the supplied Blender house pack as a GLB file. If it is not present, the built-in procedural house set is used automatically.
+- One short residential street with sidewalks and two houses facing each other.
+- House A and House B each have a separate empty interior.
+- Front doors rotate around a hinge pivot before the location transition.
+- Scene transitions use a short fade and preserve the correct destination spawn.
+- One shared camera, renderer, FPS controller and input layer are used across all locations.
+- Each location owns its own colliders, interaction points and navigation bounds.
+
+Interiors are intentionally unfurnished. They currently contain only the floor, walls, ceiling, windows, lighting and door opening.
 
 ## Run
 
@@ -22,7 +22,7 @@ npm install
 npm run dev
 ~~~
 
-Build and preview the static site:
+Run controller tests and build the static site:
 
 ~~~sh
 npm test
@@ -38,40 +38,33 @@ npm run preview
 | Shift | Sprint |
 | Space | Jump |
 | Mouse | Look (click the world to capture the pointer) |
-| E | Interact with nearby home markers / district sign |
+| E | Enter / leave a house |
 | Escape | Pause / resume |
 | Touch | Left joystick to move, drag right side to look, action buttons |
 | Gamepad | Left stick move, right stick look, A jump, X interact, triggers sprint, Start / B pause |
 
-## Optional Blender model pack
-
-Place the exported model at:
-
-~~~text
-public/models/LowPoly_House_20_Pack_Selected.glb
-~~~
-
-The supplied pack exports six scene roots named `house_1`, `house_2`, `house_3`, `house_4`, `house_6` and `house_8`. The world reuses these six authored variants across all twenty lots, fits the source transforms to a consistent house footprint, grounds each model and applies a per-lot facade tint. The built-in procedural houses remain available as a fallback, so the world starts even when the GLB is not present. The GLB is an optional local asset and must be copied to the path above before it can appear in the deployed world.
-
-## Project layout
+## Scene architecture
 
 ~~~text
 src/
   core/
-    player-controller.js
     input-controller.js
+    player-controller.js
+  scenes/
+    scene-manager.js
   world/
-    world.js
-  main.js
-public/
-  models/
-    LowPoly_House_20_Pack_Selected.glb  (optional)
-tests/
-  player-controller.test.js
+    exterior.js
+    geometry.js
+    interior-builder.js
+    interactions/
+      door-transition.js
+  interiors/
+    house-a.js
+    house-b.js
 ~~~
 
-The movement controller is kept separate from the world builder so another level can reuse the same FPS movement, touch, keyboard, mouse and gamepad input.
+The SceneManager switches location visibility and world data without recreating the renderer, camera or player controller. The player controller accepts new colliders, interactables and navigation bounds through setWorld().
 
-## Source relationship
+## Deployment
 
-The first-person movement architecture is based on the approach in [akcizur/DFLAT](https://github.com/akcizur/DFLAT). This repository is a reusable controller and test world, not the DFLAT game.
+The repository is configured for GitHub Pages through .github/workflows/pages.yml.

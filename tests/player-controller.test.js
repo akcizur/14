@@ -20,8 +20,7 @@ test("W moves the player forward along negative Z", () => {
 test("solid AABB colliders block movement", () => {
   const state = { started: true, paused: false };
   const controller = createPlayerController({
-    camera: createCamera(),
-    state,
+    camera: createCamera(), state,
     colliders: [{ name: "wall", minX: -2, maxX: 2, minZ: -1, maxZ: 1 }]
   });
   controller.setSpawn({ x: 0, z: 1.35, yaw: 0 });
@@ -56,4 +55,42 @@ test("paused state prevents movement", () => {
   controller.keysDown.KeyW = true;
   controller.update(1 / 30);
   assert.equal(controller.player.z, 0);
+});
+
+test("setWorld replaces colliders and interaction points without recreating the controller", () => {
+  const state = { started: true, paused: false };
+  const controller = createPlayerController({ camera: createCamera(), state });
+  controller.setWorld({
+    colliders: [{ name: "new-wall", minX: -1, maxX: 1, minZ: -1, maxZ: 1 }],
+    interactables: [{ id: "door", x: 0, z: 2, range: 3, prompt: "ENTER" }],
+    navigation: { bounds: { minX: -4, maxX: 4, minZ: -4, maxZ: 4 } }
+  });
+  assert.equal(controller.setSpawn({ x: 0, z: 2, yaw: 0 }), true);
+  assert.equal(controller.update(1 / 60)?.id, "door");
+  controller.keysDown.KeyW = true;
+  controller.update(1 / 30);
+  assert.equal(controller.player.z, 2);
+});
+
+test("interactions requiring facing only appear in front of the player", () => {
+  const state = { started: true, paused: false };
+  const controller = createPlayerController({ camera: createCamera(), state });
+  controller.setWorld({ interactables: [{
+    id: "front-door", x: 0, z: -1.5, range: 2,
+    requiresFacing: true, facingThreshold: 0.2
+  }] });
+  controller.setSpawn({ x: 0, z: 0, yaw: 0 });
+  assert.equal(controller.update(1 / 60)?.id, "front-door");
+  controller.player.yaw = Math.PI;
+  assert.equal(controller.update(1 / 60), null);
+});
+
+test("transition state locks movement and interaction", () => {
+  const state = { started: true, paused: false, transitioning: true };
+  const controller = createPlayerController({ camera: createCamera(), state });
+  controller.keysDown.KeyW = true;
+  controller.update(1 / 30);
+  assert.equal(controller.player.z, 0);
+  assert.equal(controller.jump(), false);
+  assert.equal(controller.doInteract(), false);
 });

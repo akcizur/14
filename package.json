@@ -1,9 +1,9 @@
 {
-  "name": "fps-foundation",
+  "name": "14-two-house-world",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
-  "description": "Reusable first-person controller foundation extracted from DFLAT gameplay architecture.",
+  "description": "Two-house low-poly FPS world with animated door scene transitions.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
