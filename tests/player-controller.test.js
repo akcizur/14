@@ -62,14 +62,14 @@ test("setWorld replaces colliders and interaction points without recreating the 
   const controller = createPlayerController({ camera: createCamera(), state });
   controller.setWorld({
     colliders: [{ name: "new-wall", minX: -1, maxX: 1, minZ: -1, maxZ: 1 }],
-    interactables: [{ id: "door", x: 0, z: 2, range: 3, prompt: "ENTER" }],
+    interactables: [{ id: "door", x: 0, z: 1.35, range: 3, prompt: "ENTER" }],
     navigation: { bounds: { minX: -4, maxX: 4, minZ: -4, maxZ: 4 } }
   });
-  assert.equal(controller.setSpawn({ x: 0, z: 2, yaw: 0 }), true);
+  assert.equal(controller.setSpawn({ x: 0, z: 1.35, yaw: 0 }), true);
   assert.equal(controller.update(1 / 60)?.id, "door");
   controller.keysDown.KeyW = true;
   controller.update(1 / 30);
-  assert.equal(controller.player.z, 2);
+  assert.equal(controller.player.z, 1.35);
 });
 
 test("interactions requiring facing only appear in front of the player", () => {
