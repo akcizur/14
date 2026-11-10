@@ -97,7 +97,7 @@ export function createPlayerController({
     try {
       const result = item.action?.(item, player);
       if (result && typeof result.then === "function") {
-        result.catch(reportInteractionError);
+        Promise.resolve(result).catch(reportInteractionError);
       }
       return true;
     } catch (error) {
