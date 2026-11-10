@@ -120,3 +120,43 @@ test("malformed interaction points are ignored instead of hijacking the prompt",
   controller.setSpawn({ x: 0, z: 0, yaw: 0 });
   assert.equal(controller.update(1 / 60)?.id, "valid");
 });
+
+
+test("synchronous interaction errors are reported without escaping the input handler", () => {
+  const messages = [];
+  const controller = createPlayerController({
+    camera: createCamera(),
+    state: { started: true, paused: false, transitioning: false },
+    ui: { showToast: message => messages.push(message) }
+  });
+  controller.setWorld({
+    interactables: [{
+      id: "broken-door", x: 0, z: -1, range: 2,
+      action() { throw new Error("sync failure"); }
+    }]
+  });
+  controller.setSpawn({ x: 0, z: 0, yaw: 0 });
+
+  assert.equal(controller.doInteract(), false);
+  assert.deepEqual(messages, ["CHYBA / sync failure"]);
+});
+
+test("rejected asynchronous scene interactions are reported", async () => {
+  const messages = [];
+  const controller = createPlayerController({
+    camera: createCamera(),
+    state: { started: true, paused: false, transitioning: false },
+    ui: { showToast: message => messages.push(message) }
+  });
+  controller.setWorld({
+    interactables: [{
+      id: "broken-transition", x: 0, z: -1, range: 2,
+      action() { return Promise.reject(new Error("transition failure")); }
+    }]
+  });
+  controller.setSpawn({ x: 0, z: 0, yaw: 0 });
+
+  assert.equal(controller.doInteract(), true);
+  await Promise.resolve();
+  assert.deepEqual(messages, ["CHYBA / transition failure"]);
+});
