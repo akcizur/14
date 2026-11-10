@@ -19,7 +19,7 @@ test("wall openings create real geometry gaps with blocking glazing colliders", 
   assert.ok(group.getObjectByName("test-wall-sill-0"));
   assert.ok(group.getObjectByName("test-wall-lintel-1"));
   assert.equal(colliders.filter(item => item.name.includes("glazing")).length, 2);
-  assert.equal(colliders.length, 8);
+  assert.equal(colliders.length, 9);
 });
 
 test("overlapping and out-of-bounds openings are rejected", () => {
@@ -54,8 +54,15 @@ test("exterior facade windows sit on the outside face and retain solid collision
   assert.ok(street.colliders.some(item => item.name === aGlass.name));
   assert.ok(street.colliders.some(item => item.name === bGlass.name));
 
-  const aWindow = street.group.children.find(item => item.isGroup && item.position.z < -10 && item.position.x < 0);
-  assert.ok(aWindow);
+  const aWindow = street.group.children.find(item =>
+    item.isGroup && item.position.x === -3.55 && Math.abs(item.position.z - (-12 + 0.135)) < 1e-9
+  );
+  const bWindow = street.group.children.find(item =>
+    item.isGroup && item.position.x === -3.55 && Math.abs(item.position.z - (12 - 0.135)) < 1e-9
+  );
+  assert.ok(aWindow && bWindow);
+  assert.equal(aWindow.rotation.y, 0);
+  assert.equal(bWindow.rotation.y, Math.PI);
 });
 
 test("interior rear windows face into both rooms", () => {
