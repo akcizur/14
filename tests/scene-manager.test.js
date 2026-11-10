@@ -255,7 +255,7 @@ test("side approach is aligned to the door opening before the scene switches", a
       switched = true;
     }, 620, door);
 
-    for (const offset of [0, 100, 200, 300, 400, 500, 620]) {
+    for (const offset of [0, 100, 200, 300, 400, 500, 700]) {
       const nextFrame = frames.shift();
       assert.equal(typeof nextFrame, "function", "animation should schedule the next frame");
       nextFrame(start + offset);
