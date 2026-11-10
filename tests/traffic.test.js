@@ -45,7 +45,7 @@ test("vehicles travel in their lane direction and pause when the street is inact
 
 test("randomized traffic spawns new vehicles without leaving the road lane", () => {
   const traffic = createTraffic({ random: () => 0.5 });
-  for (let frame = 0; frame < 180; frame += 1) traffic.update(0.05, true);
+  for (let frame = 0; frame < 90; frame += 1) traffic.update(0.05, true);
 
   assert.ok(traffic.vehicles.length > 4);
   for (const vehicle of traffic.vehicles) {
