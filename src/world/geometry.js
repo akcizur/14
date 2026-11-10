@@ -102,9 +102,16 @@ export function addWindow(group, x, y, z, width = 1.5, height = 1.15, rotationY 
     frame.position.set(px, py, 0.035);
     windowGroup.add(frame);
   }
-  const mullion = new THREE.Mesh(new THREE.BoxGeometry(0.055, height, 0.11), trim);
-  mullion.position.z = 0.04;
-  windowGroup.add(mullion);
+  const verticalMullion = new THREE.Mesh(new THREE.BoxGeometry(0.055, height, 0.11), trim);
+  verticalMullion.name = "window-vertical-mullion";
+  verticalMullion.position.z = 0.04;
+  windowGroup.add(verticalMullion);
+
+  const horizontalMullion = new THREE.Mesh(new THREE.BoxGeometry(width, 0.055, 0.11), trim);
+  horizontalMullion.name = "window-horizontal-mullion";
+  horizontalMullion.position.z = 0.04;
+  windowGroup.add(horizontalMullion);
+
   group.add(windowGroup);
   return windowGroup;
 }
