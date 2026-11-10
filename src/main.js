@@ -125,6 +125,7 @@ renderer.setAnimationLoop(time => {
   const deltaTime = previousTime ? Math.min((time - previousTime) / 1000, 0.05) : 0;
   previousTime = time;
   const nearby = controller.update(deltaTime);
+  exterior.traffic.update(deltaTime, sceneManager.currentId === "street" && state.started && !state.paused && !state.transitioning);
   coordinates.textContent =
     "X " + controller.player.x.toFixed(1) + " · Z " + controller.player.z.toFixed(1);
 
@@ -148,6 +149,7 @@ window.addEventListener("beforeunload", () => {
   resizeObserver?.disconnect();
   if (!resizeObserver) window.removeEventListener("resize", resize);
   renderer.setAnimationLoop(null);
+  exterior.traffic.dispose();
   sceneManager.dispose();
   renderer.dispose();
 });

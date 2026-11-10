@@ -4,6 +4,7 @@ import { createDoor } from "./interactions/door-transition.js";
 import { createDoorSpawns } from "../scenes/door-spawns.js";
 import { createGableRoofLayout } from "./roof-geometry.js";
 import { buildWindowInteriorPreview } from "./interior-preview.js";
+import { createTraffic } from "./traffic.js";
 
 function addGableEnd(group, name, x, frontZ, rearZ, centerZ, wallHeight, ridgeY, material) {
   const geometry = new THREE.BufferGeometry();
@@ -269,10 +270,13 @@ export function buildExterior({ onDoorInteract = () => {} } = {}) {
     group.add(crown);
   }
 
+  const traffic = createTraffic({ colliders });
+  group.add(traffic.group);
+
   interactables.push(houseA.interactable, houseB.interactable);
 
   return {
-    id: "street", type: "exterior", group, colliders, interactables,
+    id: "street", type: "exterior", group, colliders, interactables, traffic,
     doors: { houseA: houseA.door, houseB: houseB.door },
     spawn: { x: 0, z: 0, yaw: 0 },
     spawns: {
