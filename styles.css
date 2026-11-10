@@ -5,7 +5,7 @@
 }
 * { box-sizing: border-box; }
 html, body, #app { width: 100%; height: 100%; margin: 0; overflow: hidden; }
-body { background: #090a0b; }
+body { background: #090a0b; overscroll-behavior: none; }
 button { font: inherit; }
 #app { position: relative; isolation: isolate; }
 #game { position: absolute; inset: 0; touch-action: none; }
@@ -73,7 +73,7 @@ button { font: inherit; }
   .touch-ui { display: block; position: fixed; inset: 0; z-index: 4; pointer-events: none; }
   .move-stick {
     position: absolute; left: max(22px, env(safe-area-inset-left)); bottom: max(28px, env(safe-area-inset-bottom));
-    width: 142px; height: 142px; border-radius: 50%; pointer-events: auto; touch-action: none;
+    width: 142px; height: 142px; border-radius: 50%; pointer-events: auto; touch-action: none; touch-action: none;
   }
   .stick-ring {
     position: absolute; inset: 0; border: 1px solid rgba(232,239,240,.22);
