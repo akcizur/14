@@ -20,7 +20,7 @@ export function getGamepadButtonEdges(buttons = [], previousButtons = []) {
 export function bindInput({
   element, controller,
   state = { started: true, paused: false, transitioning: false },
-  onInteract = () => {}, onPauseChange = () => {}, touchRoot = document
+  onInteract = () => {}, onPauseChange = () => {}, onStart = () => {}, touchRoot = document
 }) {
   if (!element || !controller) throw new TypeError("bindInput requires a render element and player controller.");
   const { player, keysDown } = controller;
@@ -41,6 +41,8 @@ export function bindInput({
   const moveKnob = touchRoot.getElementById?.("moveKnob") ?? touchRoot.querySelector?.("#moveKnob");
   const lookZone = touchRoot.getElementById?.("touchLookZone") ?? touchRoot.querySelector?.("#touchLookZone");
   const resumeButton = touchRoot.getElementById?.("resumeButton") ?? touchRoot.querySelector?.("#resumeButton");
+  const startButton = touchRoot.getElementById?.("startButton") ?? touchRoot.querySelector?.("#startButton");
+  const welcomeScreen = touchRoot.getElementById?.("welcomeScreen") ?? touchRoot.querySelector?.("#welcomeScreen");
 
   function listen(target, type, callback, options) {
     if (!target?.addEventListener) return;
@@ -113,17 +115,51 @@ export function bindInput({
   function togglePause() { setPaused(!state.paused); }
   function requestPointerLock() {
     if (state.paused || state.transitioning || !state.started || !element.requestPointerLock) return;
-    const result = element.requestPointerLock();
-    if (result?.catch) result.catch(() => {});
+    try {
+      const result = element.requestPointerLock();
+      if (result?.catch) result.catch(() => {});
+    } catch {
+      // Pointer lock is optional; movement and touch look still work without it.
+    }
+  }
+  function startGame() {
+    if (state.started || state.transitioning) return;
+    state.started = true;
+    if (welcomeScreen) welcomeScreen.hidden = true;
+    requestPointerLock();
+    onStart();
+  }
+  function resumeGame() {
+    if (state.transitioning) return;
+    setPaused(false);
+    requestPointerLock();
   }
   function onKeyDown(event) {
     const target = event.target;
     if (target instanceof Element && (target.matches("input, textarea, select") || target.isContentEditable)) return;
-    if (event.code === "Escape") { event.preventDefault(); if (!event.repeat) togglePause(); return; }
-    if (event.code === "Enter" && state.paused) { event.preventDefault(); setPaused(false); return; }
+    if (event.code === "Escape") {
+      event.preventDefault();
+      if (!event.repeat) {
+        if (!state.started) startGame();
+        else if (state.paused) resumeGame();
+        else togglePause();
+      }
+      return;
+    }
+    if (event.code === "Enter") {
+      if (!state.started) { event.preventDefault(); startGame(); return; }
+      if (state.paused) { event.preventDefault(); resumeGame(); return; }
+    }
     if (state.transitioning) return;
-    if (event.code === "Space") { event.preventDefault(); if (!event.repeat && !state.paused) controller.jump?.(); return; }
-    if (event.code === "KeyE") { if (!event.repeat && !state.paused) onInteract(); return; }
+    if (event.code === "Space") {
+      event.preventDefault();
+      if (!event.repeat) {
+        if (!state.started) startGame();
+        else if (!state.paused) controller.jump?.();
+      }
+      return;
+    }
+    if (event.code === "KeyE") { if (!event.repeat && state.started && !state.paused) onInteract(); return; }
     if (movementCodes.includes(event.code)) { event.preventDefault(); setKey(event.code, !state.paused); return; }
     if (event.code === "ShiftLeft" || event.code === "ShiftRight") setKey(event.code, !state.paused);
   }
@@ -220,7 +256,8 @@ export function bindInput({
       listen(button, "lostpointercapture", releaseRun);
     }
   }
-  listen(resumeButton, "click", () => setPaused(false));
+  listen(startButton, "click", startGame);
+  listen(resumeButton, "click", resumeGame);
 
   function deadZone(value) {
     const magnitude = Math.abs(value || 0);
@@ -260,7 +297,11 @@ export function bindInput({
 
     // Pause buttons must be processed even while paused, otherwise the gamepad
     // could enter the pause screen but could never leave it.
-    if (edges[9] || edges[1]) togglePause();
+    if (edges[9] || edges[1]) {
+      if (!state.started) startGame();
+      else if (state.paused) resumeGame();
+      else togglePause();
+    }
 
     if (!state.paused && !state.transitioning && state.started) {
       const leftX = deadZone(pad.axes[0]), leftY = deadZone(pad.axes[1]);
@@ -290,8 +331,9 @@ export function bindInput({
   animationFrame = requestAnimationFrame(pollGamepad);
 
   return {
+    start: startGame,
     pause: () => setPaused(true),
-    resume: () => setPaused(false),
+    resume: resumeGame,
     destroy() {
       if (destroyed) return;
       destroyed = true;
