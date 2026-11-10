@@ -85,3 +85,29 @@ test("both interior exit doors expose E immediately inside and target the matchi
     assert.deepEqual(calls.at(-1), entry.expected);
   }
 });
+
+test("street entry prompts stay behind the player after exiting and appear when they turn back", () => {
+  const street = buildExterior();
+  const controller = createPlayerController({
+    camera: createCamera(),
+    state: { started: true, paused: false, transitioning: false }
+  });
+  controller.setWorld({
+    colliders: street.colliders,
+    interactables: street.interactables,
+    navigation: street.navigation
+  });
+
+  const cases = [
+    { spawn: street.spawns.outsideHouseA, id: "enter-house-a", towardDoorYaw: 0 },
+    { spawn: street.spawns.outsideHouseB, id: "enter-house-b", towardDoorYaw: Math.PI }
+  ];
+
+  for (const entry of cases) {
+    assert.equal(controller.setSpawn(entry.spawn), true);
+    assert.equal(controller.update(1 / 60), null, entry.id + " must stay behind the player after exit");
+
+    controller.player.yaw = entry.towardDoorYaw;
+    assert.equal(controller.update(1 / 60)?.id, entry.id, entry.id + " should appear when facing the door");
+  }
+});
