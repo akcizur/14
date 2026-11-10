@@ -88,6 +88,7 @@ export function addWindow(group, x, y, z, width = 1.5, height = 1.15, rotationY 
   });
   const trim = makeMaterial(0xe1ded2, { roughness: 0.78 });
   const pane = new THREE.Mesh(new THREE.BoxGeometry(width, height, 0.055), glass);
+  pane.name = "window-glass-pane";
   pane.castShadow = false;
   windowGroup.add(pane);
   const frameSize = 0.09;
