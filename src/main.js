@@ -12,6 +12,7 @@ const coordinates = document.getElementById("coordinates");
 const locationLabel = document.getElementById("locationLabel");
 const toast = document.getElementById("toast");
 const hint = document.getElementById("hint");
+const crosshair = document.querySelector(".crosshair");
 const pauseScreen = document.getElementById("pauseScreen");
 const welcomeScreen = document.getElementById("welcomeScreen");
 const fadeElement = document.getElementById("sceneFade");
@@ -127,7 +128,9 @@ renderer.setAnimationLoop(time => {
   coordinates.textContent =
     "X " + controller.player.x.toFixed(1) + " · Z " + controller.player.z.toFixed(1);
 
-  if (!state.transitioning && !state.paused && nearby) {
+  const canInteract = state.started && !state.transitioning && !state.paused && Boolean(nearby);
+  crosshair.classList.toggle("is-interactive", canInteract);
+  if (canInteract) {
     hint.textContent = nearby.prompt || "E / INTERAKCE";
     hint.classList.add("is-interactive");
   } else {
