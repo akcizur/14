@@ -3,6 +3,7 @@ import { addBox, addPlane, addWallWithOpenings, addWindow, makeMaterial } from "
 import { createDoor } from "./interactions/door-transition.js";
 import { createDoorSpawns } from "../scenes/door-spawns.js";
 import { createGableRoofLayout } from "./roof-geometry.js";
+import { buildWindowInteriorPreview } from "./interior-preview.js";
 
 function addGableEnd(group, name, x, frontZ, rearZ, centerZ, wallHeight, ridgeY, material) {
   const geometry = new THREE.BufferGeometry();
@@ -24,6 +25,7 @@ function addGableEnd(group, name, x, frontZ, rearZ, centerZ, wallHeight, ridgeY,
 function buildHouse(group, colliders, config) {
   const {
     id, centerZ, frontSide, wallColor, roofColor, doorColor,
+    interiorWallColor, interiorFloorColor,
     targetLocation, streetSpawnKey, onDoorInteract
   } = config;
   const width = 12, depth = 10, wallHeight = 3.15;
@@ -190,6 +192,14 @@ function buildHouse(group, colliders, config) {
     }
   }
 
+  group.add(buildWindowInteriorPreview({
+    id,
+    centerZ,
+    frontSide,
+    wallColor: interiorWallColor,
+    floorColor: interiorFloorColor
+  }));
+
   const door = createDoor(group, colliders, {
     id: id + "-front-door", x: 0, z: frontZ,
     rotationY: frontSide < 0 ? Math.PI : 0, color: doorColor
@@ -238,11 +248,13 @@ export function buildExterior({ onDoorInteract = () => {} } = {}) {
   const houseA = buildHouse(group, colliders, {
     id: "house-a", centerZ: -17, frontSide: 1,
     wallColor: 0xc9c0af, roofColor: 0x555a59, doorColor: 0x6a574a,
+    interiorWallColor: 0xd3cfc4, interiorFloorColor: 0x918d82,
     targetLocation: "houseA", streetSpawnKey: "outsideHouseA", onDoorInteract
   });
   const houseB = buildHouse(group, colliders, {
     id: "house-b", centerZ: 17, frontSide: -1,
     wallColor: 0xb4c0bb, roofColor: 0x4b5355, doorColor: 0x536d69,
+    interiorWallColor: 0xc6ceca, interiorFloorColor: 0x858c88,
     targetLocation: "houseB", streetSpawnKey: "outsideHouseB", onDoorInteract
   });
 

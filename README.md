@@ -9,6 +9,7 @@ A small first-person Three.js environment built around one street, two opposing 
 - Front doors rotate inward around a hinge pivot; interior exit doors swing outward toward the street.
 - Window openings are modeled in the walls and backed by glazing colliders, so the glass remains visible and solid.
 - Both roofs use matching gable geometry with aligned ridge caps, verge boards and eaves.
+- Static, non-interactive interior previews sit behind the exterior glazing and match each playable room's dimensions, wall finish, floor finish and rear window positions.
 - Entry and exit use paired, house-specific spawn points.
 - The player enters facing into the room and exits facing away from the facade toward the street.
 - Scene transitions use a short fade and preserve the exact source position if a destination spawn is invalid.

@@ -53,3 +53,44 @@ test("street tree trunks block movement instead of acting as walk-through scener
     assert.ok(collider.maxZ - collider.minZ > 0.3);
   }
 });
+test("both exterior houses contain correctly aligned static interior window previews", () => {
+  const street = buildExterior();
+
+  for (const { id, centerZ, frontSide, wallColor, floorColor } of [
+    {
+      id: "house-a",
+      centerZ: -17,
+      frontSide: 1,
+      wallColor: 0xd3cfc4,
+      floorColor: 0x918d82
+    },
+    {
+      id: "house-b",
+      centerZ: 17,
+      frontSide: -1,
+      wallColor: 0xc6ceca,
+      floorColor: 0x858c88
+    }
+  ]) {
+    const preview = street.group.getObjectByName(id + "-window-preview");
+    assert.ok(preview, id + " should have a static window preview");
+    assert.equal(preview.visible, true);
+    assert.equal(preview.userData.staticWindowPreview, true);
+    assert.equal(preview.userData.frontZ, centerZ + frontSide * 5);
+    assert.equal(preview.userData.rearZ, centerZ - frontSide * 5);
+    assert.ok(preview.getObjectByName(id + "-preview-floor"));
+    assert.ok(preview.getObjectByName(id + "-preview-ceiling"));
+    assert.ok(preview.getObjectByName(id + "-preview-side-wall-left"));
+    assert.ok(preview.getObjectByName(id + "-preview-side-wall-right"));
+    assert.ok(preview.getObjectByName(id + "-preview-rear-glass--3.5"));
+    assert.ok(preview.getObjectByName(id + "-preview-rear-glass-3.5"));
+    assert.ok(preview.getObjectByName(id + "-preview-interior-light"));
+    assert.ok(street.colliders.every(collider => !collider.name.includes("preview")));
+    assert.deepEqual(preview.userData.bounds, {
+      minX: -6,
+      maxX: 6,
+      minZ: centerZ - 5,
+      maxZ: centerZ + 5
+    });
+  }
+});
