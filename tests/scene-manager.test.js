@@ -91,3 +91,57 @@ test("an unknown destination spawn is rejected before opening the door", async (
   );
   assert.deepEqual(opened, []);
 });
+
+
+test("a blocked destination rolls the scene, world data and spawn back atomically", async () => {
+  const { manager, controller, state } = createFixture();
+  manager.activate("street", "start");
+  const street = manager.locations.get("street");
+  const houseA = manager.locations.get("houseA");
+  houseA.spawns.entry.blocked = true;
+
+  await assert.rejects(
+    manager.transition("houseA", "houseA", "entry"),
+    /blocked/
+  );
+
+  assert.equal(manager.currentId, "street");
+  assert.equal(street.group.visible, true);
+  assert.equal(houseA.group.visible, false);
+  assert.equal(controller.currentWorld.colliders[0], "street-colliders");
+  assert.deepEqual(controller.player, { x: 0, z: 0, yaw: 0, pitch: -0.04 });
+  assert.equal(state.transitioning, false);
+});
+
+test("a door animation error restores the closed door and transition lock", async () => {
+  const { manager, controller, state, opened } = createFixture();
+  manager.activate("street", "start");
+  const door = manager.locations.get("street").doors.houseA;
+  door.animateOpen = async () => {
+    opened.push("failed-open");
+    throw new Error("animation failure");
+  };
+
+  await assert.rejects(
+    manager.transition("houseA", "houseA", "entry"),
+    /animation failure/
+  );
+
+  assert.deepEqual(opened, ["failed-open", "reset:street-A"]);
+  assert.equal(manager.currentId, "street");
+  assert.equal(controller.player.z, 0);
+  assert.equal(state.transitioning, false);
+});
+
+test("transitions are rejected while paused or already transitioning", async () => {
+  const { manager, state, opened } = createFixture();
+  manager.activate("street", "start");
+
+  state.paused = true;
+  assert.equal(await manager.transition("houseA", "houseA", "entry"), false);
+  state.paused = false;
+
+  state.transitioning = true;
+  assert.equal(await manager.transition("houseA", "houseA", "entry"), false);
+  assert.deepEqual(opened, []);
+});
