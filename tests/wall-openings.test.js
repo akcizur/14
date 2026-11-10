@@ -43,8 +43,8 @@ test("overlapping and out-of-bounds openings are rejected", () => {
 
 test("exterior facade windows sit on the outside face and retain solid collision", () => {
   const street = buildExterior();
-  const houseAWindow = street.group.getObjectByName("house-a-front-wall-left");
-  const houseBWindow = street.group.getObjectByName("house-b-front-wall-left");
+  const houseAWindow = street.group.getObjectByName("house-a-front-wall-left-sill-0");
+  const houseBWindow = street.group.getObjectByName("house-b-front-wall-left-sill-0");
   assert.ok(houseAWindow);
   assert.ok(houseBWindow);
 
@@ -53,6 +53,12 @@ test("exterior facade windows sit on the outside face and retain solid collision
   assert.ok(aGlass && bGlass);
   assert.ok(street.colliders.some(item => item.name === aGlass.name));
   assert.ok(street.colliders.some(item => item.name === bGlass.name));
+
+  const aRearGlass = street.group.getObjectByName("house-a-rear-wall-glazing-0");
+  const bRearGlass = street.group.getObjectByName("house-b-rear-wall-glazing-0");
+  assert.ok(aRearGlass && bRearGlass);
+  assert.ok(street.colliders.some(item => item.name === aRearGlass.name));
+  assert.ok(street.colliders.some(item => item.name === bRearGlass.name));
 
   const aWindow = street.group.children.find(item =>
     item.isGroup && item.position.x === -3.55 && Math.abs(item.position.z - (-12 + 0.135)) < 1e-9
@@ -65,7 +71,7 @@ test("exterior facade windows sit on the outside face and retain solid collision
   assert.equal(bWindow.rotation.y, Math.PI);
 });
 
-test("interior rear windows face into both rooms", () => {
+test("interior front and rear windows match the two facade openings", () => {
   for (const config of [
     { centerZ: -17, frontSide: 1 },
     { centerZ: 17, frontSide: -1 }
@@ -75,12 +81,20 @@ test("interior rear windows face into both rooms", () => {
       centerZ: config.centerZ,
       frontSide: config.frontSide
     });
+    const frontZ = config.centerZ + config.frontSide * 5;
     const rearZ = config.centerZ - config.frontSide * 5;
-    const expectedInteriorOffset = config.frontSide * 0.135;
-    const rearWindow = interior.group.children.find(item =>
-      item.isGroup && Math.abs(item.position.z - (rearZ + expectedInteriorOffset)) < 1e-9
+    const frontWindowZ = frontZ - config.frontSide * 0.135;
+    const rearWindowZ = rearZ + config.frontSide * 0.135;
+    const frontWindows = interior.group.children.filter(item =>
+      item.isGroup && Math.abs(item.position.z - frontWindowZ) < 1e-9
     );
-    assert.ok(rearWindow);
-    assert.equal(rearWindow.rotation.y, config.frontSide < 0 ? Math.PI : 0);
+    const rearWindows = interior.group.children.filter(item =>
+      item.isGroup && Math.abs(item.position.z - rearWindowZ) < 1e-9
+    );
+
+    assert.equal(frontWindows.length, 2);
+    assert.equal(rearWindows.length, 2);
+    assert.ok(frontWindows.every(item => item.rotation.y === (config.frontSide > 0 ? Math.PI : 0)));
+    assert.ok(rearWindows.every(item => item.rotation.y === (config.frontSide < 0 ? Math.PI : 0)));
   }
 });
