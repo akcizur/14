@@ -114,7 +114,11 @@ export class SceneManager {
         this.currentId = source.id;
         this.onChange(source.id, source);
       }
-      this.fadeElement?.classList.remove("is-visible");
+      if (this.fadeElement?.classList.contains("is-visible")) {
+        await this.fade(false);
+      } else {
+        this.fadeElement?.classList.remove("is-visible");
+      }
       throw error;
     } finally {
       this.state.transitioning = false;
