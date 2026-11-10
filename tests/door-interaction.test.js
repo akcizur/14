@@ -17,9 +17,11 @@ test("approaching either exterior door exposes E and starts the correct house tr
   const street = buildExterior({
     onDoorInteract: (...args) => calls.push(args)
   });
+  const interactionErrors = [];
   const controller = createPlayerController({
     camera: createCamera(),
-    state: { started: true, paused: false, transitioning: false }
+    state: { started: true, paused: false, transitioning: false },
+    ui: { showToast: message => interactionErrors.push(message) }
   });
   controller.setWorld({
     colliders: street.colliders,
@@ -39,7 +41,9 @@ test("approaching either exterior door exposes E and starts the correct house tr
     const nearby = controller.update(1 / 60);
     assert.ok(nearby, entry.house + " should expose a door prompt");
     assert.match(nearby.prompt, /VSTOUPIT/);
-    assert.equal(controller.doInteract(), true);
+    assert.equal(typeof nearby.action, "function");
+    const interacted = controller.doInteract();
+    assert.equal(interacted, true, interactionErrors.join("; ") || "doInteract returned false");
     assert.deepEqual(calls.at(-1), [entry.house, entry.doorId, "entry"]);
   }
 });
