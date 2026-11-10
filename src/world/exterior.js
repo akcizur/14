@@ -22,7 +22,10 @@ function addGableEnd(group, name, x, frontZ, rearZ, centerZ, wallHeight, ridgeY,
 }
 
 function buildHouse(group, colliders, config) {
-  const { id, centerZ, frontSide, wallColor, roofColor, doorColor, targetLocation, streetSpawnKey } = config;
+  const {
+    id, centerZ, frontSide, wallColor, roofColor, doorColor,
+    targetLocation, streetSpawnKey, onDoorInteract
+  } = config;
   const width = 12, depth = 10, wallHeight = 3.15;
   const halfW = width / 2, halfD = depth / 2;
   const frontZ = centerZ + frontSide * halfD;
@@ -233,12 +236,12 @@ export function buildExterior({ onDoorInteract = () => {} } = {}) {
   const houseA = buildHouse(group, colliders, {
     id: "house-a", centerZ: -17, frontSide: 1,
     wallColor: 0xc9c0af, roofColor: 0x555a59, doorColor: 0x6a574a,
-    targetLocation: "houseA", streetSpawnKey: "outsideHouseA"
+    targetLocation: "houseA", streetSpawnKey: "outsideHouseA", onDoorInteract
   });
   const houseB = buildHouse(group, colliders, {
     id: "house-b", centerZ: 17, frontSide: -1,
     wallColor: 0xb4c0bb, roofColor: 0x4b5355, doorColor: 0x536d69,
-    targetLocation: "houseB", streetSpawnKey: "outsideHouseB"
+    targetLocation: "houseB", streetSpawnKey: "outsideHouseB", onDoorInteract
   });
 
   const trunk = makeMaterial(0x665748);
