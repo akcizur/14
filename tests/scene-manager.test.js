@@ -166,3 +166,28 @@ test("failed direct activation restores the previous world and player spawn", ()
   assert.equal(controller.currentWorld.colliders[0], "street-colliders");
   assert.deepEqual(controller.player, { x: 2, z: 3, yaw: 0.5, pitch: -0.2 });
 });
+
+
+test("a partial world-data switch restores the source scene before rejecting", async () => {
+  const { manager, controller, state } = createFixture();
+  manager.activate("street", "start");
+  const originalSetWorld = controller.setWorld.bind(controller);
+  controller.setWorld = world => {
+    if (world.colliders?.[0] === "house-A-colliders") {
+      throw new Error("world switch failure");
+    }
+    originalSetWorld(world);
+  };
+
+  await assert.rejects(
+    manager.transition("houseA", "houseA", "entry"),
+    /world switch failure/
+  );
+
+  assert.equal(manager.currentId, "street");
+  assert.equal(manager.locations.get("street").group.visible, true);
+  assert.equal(manager.locations.get("houseA").group.visible, false);
+  assert.equal(controller.currentWorld.colliders[0], "street-colliders");
+  assert.deepEqual(controller.player, { x: 0, z: 0, yaw: 0, pitch: -0.04 });
+  assert.equal(state.transitioning, false);
+});
