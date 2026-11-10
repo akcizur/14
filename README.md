@@ -5,8 +5,10 @@ A small first-person Three.js environment built around one street, two opposing 
 ## Current world
 
 - One short residential street with sidewalks and two houses facing each other.
-- House A and House B each have a separate empty interior.
-- Front doors rotate around a hinge pivot before the location transition.
+- House A and House B each have a separate empty interior, with matching front and rear window positions.
+- Front doors rotate inward around a hinge pivot; interior exit doors swing outward toward the street.
+- Window openings are modeled in the walls and backed by glazing colliders, so the glass remains visible and solid.
+- Both roofs use matching gable geometry with aligned ridge caps, verge boards and eaves.
 - Entry and exit use paired, house-specific spawn points.
 - The player enters facing into the room and exits facing away from the facade toward the street.
 - Scene transitions use a short fade and preserve the exact source position if a destination spawn is invalid.
@@ -58,6 +60,7 @@ src/
   world/
     exterior.js
     geometry.js
+    roof-geometry.js
     interior-builder.js
     interactions/
       door-transition.js
@@ -66,8 +69,10 @@ src/
     house-b.js
 ~~~
 
+Touch joystick and gamepad analogue input are kept as independent sources and combined safely; gamepad pause works in both directions and look speed is time-based. Navigation bounds include the player's collision radius.
+
 The SceneManager switches location visibility and world data without recreating the renderer, camera or player controller. The player controller accepts new colliders, interactables and navigation bounds through setWorld(). Door spawn orientation is centralized in door-spawns.js so both opposing houses use the same in/out rules.
 
 ## Deployment
 
-The repository is configured for GitHub Pages through .github/workflows/pages.yml.
+The repository is configured for GitHub Pages through .github/workflows/pages.yml. The test suite covers player movement, collision boundaries, door swing direction, scene transitions, roof profiles, wall openings and input-source arbitration.
