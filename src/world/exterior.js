@@ -5,6 +5,7 @@ import { createDoorSpawns } from "../scenes/door-spawns.js";
 import { createGableRoofLayout } from "./roof-geometry.js";
 import { buildWindowInteriorPreview } from "./interior-preview.js";
 import { createTraffic } from "./traffic.js";
+import { createPedestrians } from "./pedestrians.js";
 
 function addGableEnd(group, name, x, frontZ, rearZ, centerZ, wallHeight, ridgeY, material) {
   const geometry = new THREE.BufferGeometry();
@@ -245,6 +246,11 @@ export function buildExterior({ onDoorInteract = () => {} } = {}) {
   addBox(group, null, "north-curb", 0, 0.02, -4.35, 64, 0.16, 0.18, curb);
   addBox(group, null, "south-curb", 0, 0.02, 4.35, 64, 0.16, 0.18, curb);
   for (let x = -29; x <= 29; x += 8) addPlane(group, "road-center-marking", x, 0, 3.3, 0.12, markings, 0.021);
+  for (const crossingX of [-24, -12, 12, 24]) {
+    for (let stripe = -4; stripe <= 4; stripe += 1) {
+      addPlane(group, "zebra-crossing-marking", crossingX + stripe * 0.78, 0, 0.43, 7.7, markings, 0.024);
+    }
+  }
 
   const houseA = buildHouse(group, colliders, {
     id: "house-a", centerZ: -17, frontSide: 1,
@@ -272,11 +278,20 @@ export function buildExterior({ onDoorInteract = () => {} } = {}) {
 
   const traffic = createTraffic({ colliders });
   group.add(traffic.group);
+  const pedestrians = createPedestrians({
+    colliders,
+    traffic,
+    houses: [
+      { id: "house-a", door: houseA.door, interactable: houseA.interactable, frontZ: -12, frontSide: 1, sidewalkSide: -1 },
+      { id: "house-b", door: houseB.door, interactable: houseB.interactable, frontZ: 12, frontSide: -1, sidewalkSide: 1 }
+    ]
+  });
+  group.add(pedestrians.group);
 
   interactables.push(houseA.interactable, houseB.interactable);
 
   return {
-    id: "street", type: "exterior", group, colliders, interactables, traffic,
+    id: "street", type: "exterior", group, colliders, interactables, traffic, pedestrians,
     doors: { houseA: houseA.door, houseB: houseB.door },
     spawn: { x: 0, z: 0, yaw: 0 },
     spawns: {
