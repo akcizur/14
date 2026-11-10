@@ -86,8 +86,6 @@ export function buildEmptyInterior({
     x: exitPoint.x,
     z: exitPoint.z,
     range: 2.35,
-    requiresFacing: true,
-    facingThreshold: 0.2,
     prompt: "E  /  ODEJÍT NA ULICI",
     action: () => onExit("street", "exit", streetSpawnKey)
   });
