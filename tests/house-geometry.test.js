@@ -41,3 +41,15 @@ test("each house interior has four windows, continuous baseboards and a ceiling 
     assert.ok(interior.group.getObjectByName(interior.id + "-ceiling-light-diffuser"));
   }
 });
+
+test("street tree trunks block movement instead of acting as walk-through scenery", () => {
+  const street = buildExterior();
+  const treeColliders = street.colliders.filter(item => item.name === "garden-tree-trunk");
+
+  assert.equal(treeColliders.length, 4);
+  for (const collider of treeColliders) {
+    assert.equal(collider.enabled, true);
+    assert.ok(collider.maxX - collider.minX > 0.3);
+    assert.ok(collider.maxZ - collider.minZ > 0.3);
+  }
+});
