@@ -7,6 +7,10 @@ const HANDLE = makeMaterial(0xaaa18d, { metalness: 0.48, roughness: 0.35 });
 export function createDoor(group, colliders, {
   id, x = 0, z = 0, rotationY = 0, color = 0x6b5748, openAngle = 1.62
 }) {
+  if (!id || ![x, z, rotationY, openAngle].every(Number.isFinite)) {
+    throw new TypeError("createDoor requires an id and finite position/orientation values.");
+  }
+
   const assembly = new THREE.Group();
   assembly.name = id + "-assembly";
   assembly.position.set(x, 0, z);
@@ -36,10 +40,16 @@ export function createDoor(group, colliders, {
   );
   inset.position.set(0.56, 1.08, 0.083);
   pivot.add(inset);
+  const insetBack = inset.clone();
+  insetBack.position.z = -0.083;
+  pivot.add(insetBack);
 
-  const handle = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 8), HANDLE);
-  handle.position.set(0.94, 1.03, 0.105);
-  pivot.add(handle);
+  const handleGeometry = new THREE.SphereGeometry(0.055, 10, 8);
+  const handleFront = new THREE.Mesh(handleGeometry, HANDLE);
+  handleFront.position.set(0.94, 1.03, 0.105);
+  const handleBack = new THREE.Mesh(handleGeometry, HANDLE);
+  handleBack.position.set(0.94, 1.03, -0.105);
+  pivot.add(handleFront, handleBack);
 
   const collider = {
     name: id + "-closed-door",
@@ -53,11 +63,16 @@ export function createDoor(group, colliders, {
     id, pivot, collider, openAngle,
     animateOpen(duration = 650) {
       collider.enabled = false;
+      const safeDuration = Number.isFinite(duration) ? Math.max(0, duration) : 650;
       const start = pivot.rotation.y;
+      if (safeDuration === 0) {
+        pivot.rotation.y = openAngle;
+        return Promise.resolve();
+      }
       const began = performance.now();
       return new Promise(resolve => {
         const frame = now => {
-          const progress = Math.min(1, (now - began) / duration);
+          const progress = Math.min(1, (now - began) / safeDuration);
           const eased = 0.5 - Math.cos(progress * Math.PI) * 0.5;
           pivot.rotation.y = start + (openAngle - start) * eased;
           if (progress < 1) requestAnimationFrame(frame);
