@@ -146,7 +146,7 @@ export class SceneManager {
 
     const finishImmediately = () => {
       onMidpoint();
-      if (!setPose(to)) throw new Error("Unable to place the player at the destination door.");
+      if (!setPose(to)) throw new Error("Target door spawn is blocked or obstructed.");
       return Promise.resolve();
     };
 
