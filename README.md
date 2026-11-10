@@ -7,7 +7,9 @@ A small first-person Three.js environment built around one street, two opposing 
 - One short residential street with sidewalks and two houses facing each other.
 - House A and House B each have a separate empty interior.
 - Front doors rotate around a hinge pivot before the location transition.
-- Scene transitions use a short fade and preserve the correct destination spawn.
+- Entry and exit use paired, house-specific spawn points.
+- The player enters facing into the room and exits facing away from the facade toward the street.
+- Scene transitions use a short fade and preserve the exact source position if a destination spawn is invalid.
 - One shared camera, renderer, FPS controller and input layer are used across all locations.
 - Each location owns its own colliders, interaction points and navigation bounds.
 
@@ -51,6 +53,7 @@ src/
     input-controller.js
     player-controller.js
   scenes/
+    door-spawns.js
     scene-manager.js
   world/
     exterior.js
@@ -63,7 +66,7 @@ src/
     house-b.js
 ~~~
 
-The SceneManager switches location visibility and world data without recreating the renderer, camera or player controller. The player controller accepts new colliders, interactables and navigation bounds through setWorld().
+The SceneManager switches location visibility and world data without recreating the renderer, camera or player controller. The player controller accepts new colliders, interactables and navigation bounds through setWorld(). Door spawn orientation is centralized in door-spawns.js so both opposing houses use the same in/out rules.
 
 ## Deployment
 

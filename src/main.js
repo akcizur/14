@@ -64,15 +64,12 @@ function resize() {
 }
 
 const controller = createPlayerController({ camera, state, ui: { showToast } });
-const exterior = buildExterior({
-  onDoorInteract: (target, doorId) => sceneManager.transition(target, doorId)
-});
-const houseA = buildHouseA({
-  onExit: (target, doorId) => sceneManager.transition(target, doorId)
-});
-const houseB = buildHouseB({
-  onExit: (target, doorId) => sceneManager.transition(target, doorId)
-});
+const transitionTo = (target, sourceDoor, targetSpawn) =>
+  sceneManager.transition(target, sourceDoor, targetSpawn);
+
+const exterior = buildExterior({ onDoorInteract: transitionTo });
+const houseA = buildHouseA({ onExit: transitionTo });
+const houseB = buildHouseB({ onExit: transitionTo });
 
 sceneManager = new SceneManager({
   root: scene, controller, state, fadeElement,
@@ -89,7 +86,7 @@ sceneManager = new SceneManager({
 sceneManager.register(exterior);
 sceneManager.register(houseA);
 sceneManager.register(houseB);
-sceneManager.activate("street");
+sceneManager.activate("street", "start");
 
 const input = bindInput({
   element: renderer.domElement, controller, state,

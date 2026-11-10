@@ -18,59 +18,87 @@ export class SceneManager {
     this.locations.set(location.id, location);
   }
 
-  activate(id) {
-    const location = this.locations.get(id);
-    if (!location) throw new Error("Unknown location: " + id);
-    for (const entry of this.locations.values()) entry.group.visible = entry.id === id;
+  getSpawn(location, spawnKey = "start") {
+    const spawn = location.spawns?.[spawnKey] ?? (spawnKey === "start" || spawnKey === "default" ? location.spawn : null);
+    if (!spawn || !Number.isFinite(spawn.x) || !Number.isFinite(spawn.z)) {
+      throw new Error("Missing spawn '" + spawnKey + "' in location '" + location.id + "'.");
+    }
+    return spawn;
+  }
+
+  setLocationWorld(location) {
     this.controller.setWorld({
       colliders: location.colliders,
       interactables: location.interactables,
       navigation: location.navigation
     });
-    if (!this.controller.setSpawn(location.spawn)) throw new Error("Invalid or obstructed spawn for location: " + id);
+  }
+
+  activate(id, spawnKey = "start") {
+    const location = this.locations.get(id);
+    if (!location) throw new Error("Unknown location: " + id);
+    const spawn = this.getSpawn(location, spawnKey);
+
+    this.setLocationWorld(location);
+    if (!this.controller.setSpawn(spawn)) {
+      throw new Error("Invalid or obstructed spawn '" + spawnKey + "' for location: " + id);
+    }
+
+    for (const entry of this.locations.values()) entry.group.visible = entry.id === id;
     this.currentId = id;
     this.onChange(id, location);
     return location;
   }
 
-  async transition(targetId, sourceDoorId) {
+  async transition(targetId, sourceDoorId, targetSpawnKey = "default") {
     if (this.state.transitioning || this.state.paused) return false;
+
     const source = this.locations.get(this.currentId);
     const target = this.locations.get(targetId);
     const door = source?.doors?.[sourceDoorId];
-    if (!source || !target || !door) throw new Error("Invalid scene transition: " + this.currentId + " → " + targetId);
+    if (!source || !target || !door) {
+      throw new Error("Invalid scene transition: " + this.currentId + " → " + targetId);
+    }
+
+    const targetSpawn = this.getSpawn(target, targetSpawnKey);
+    const previousSpawn = {
+      x: this.controller.player.x,
+      z: this.controller.player.z,
+      yaw: this.controller.player.yaw,
+      pitch: this.controller.player.pitch
+    };
 
     this.state.transitioning = true;
+    let worldSwitched = false;
+
     try {
       await door.animateOpen(650);
       await this.fade(true);
-      door.reset();
+
       source.group.visible = false;
       target.group.visible = true;
-      this.controller.setWorld({
-        colliders: target.colliders,
-        interactables: target.interactables,
-        navigation: target.navigation
-      });
+      this.setLocationWorld(target);
+      worldSwitched = true;
 
-      if (!this.controller.setSpawn(target.spawn)) {
-        target.group.visible = false;
-        source.group.visible = true;
-        this.controller.setWorld({
-          colliders: source.colliders,
-          interactables: source.interactables,
-          navigation: source.navigation
-        });
-        this.controller.setSpawn(source.spawn);
-        throw new Error("Target spawn is blocked: " + targetId);
+      if (!this.controller.setSpawn(targetSpawn)) {
+        throw new Error("Target spawn '" + targetSpawnKey + "' is blocked in location: " + targetId);
       }
 
       this.currentId = targetId;
       this.onChange(targetId, target);
+      door.reset();
       await this.fade(false);
       return true;
     } catch (error) {
       door.reset();
+      if (worldSwitched) {
+        target.group.visible = false;
+        source.group.visible = true;
+        this.setLocationWorld(source);
+        this.controller.setSpawn(previousSpawn);
+        this.currentId = source.id;
+        this.onChange(source.id, source);
+      }
       this.fadeElement?.classList.remove("is-visible");
       throw error;
     } finally {

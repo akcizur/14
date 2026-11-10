@@ -1,9 +1,10 @@
 import * as THREE from "three";
 import { addBox, addPlane, addWindow, makeMaterial } from "./geometry.js";
 import { createDoor } from "./interactions/door-transition.js";
+import { createDoorSpawns } from "../scenes/door-spawns.js";
 
 function buildHouse(group, colliders, config) {
-  const { id, centerZ, frontSide, wallColor, roofColor, doorColor } = config;
+  const { id, centerZ, frontSide, wallColor, roofColor, doorColor, targetLocation, streetSpawnKey } = config;
   const width = 12, depth = 10, wallHeight = 3.15;
   const halfW = width / 2, halfD = depth / 2;
   const frontZ = centerZ + frontSide * halfD;
@@ -42,6 +43,7 @@ function buildHouse(group, colliders, config) {
     id: id + "-front-door", x: 0, z: frontZ,
     rotationY: frontSide < 0 ? Math.PI : 0, color: doorColor
   });
+  const doorSpawns = createDoorSpawns({ doorZ: frontZ, frontSide });
 
   const pathMat = makeMaterial(0xaaa79c);
   const lawnMat = makeMaterial(0x77836f);
@@ -50,12 +52,17 @@ function buildHouse(group, colliders, config) {
 
   return {
     door,
+    spawns: doorSpawns,
     interactable: {
       id: "enter-" + id,
-      x: 0, z: frontZ + frontSide * 1.25,
-      range: 2.45, requiresFacing: true, facingThreshold: 0.18,
-      prompt: "E  /  VSTOUPIT DO " + (id === "house-a" ? "DOMU A" : "DOMU B")
-    }
+      x: 0, z: doorSpawns.outside.z,
+      range: 2.45,
+      requiresFacing: true,
+      facingThreshold: 0.18,
+      prompt: "E  /  VSTOUPIT DO " + (id === "house-a" ? "DOMU A" : "DOMU B"),
+      action: () => onDoorInteract(targetLocation, targetLocation, "entry")
+    },
+    streetSpawnKey
   };
 }
 
@@ -79,11 +86,13 @@ export function buildExterior({ onDoorInteract = () => {} } = {}) {
 
   const houseA = buildHouse(group, colliders, {
     id: "house-a", centerZ: -17, frontSide: 1,
-    wallColor: 0xc9c0af, roofColor: 0x555a59, doorColor: 0x6a574a
+    wallColor: 0xc9c0af, roofColor: 0x555a59, doorColor: 0x6a574a,
+    targetLocation: "houseA", streetSpawnKey: "outsideHouseA"
   });
   const houseB = buildHouse(group, colliders, {
     id: "house-b", centerZ: 17, frontSide: -1,
-    wallColor: 0xb4c0bb, roofColor: 0x4b5355, doorColor: 0x536d69
+    wallColor: 0xb4c0bb, roofColor: 0x4b5355, doorColor: 0x536d69,
+    targetLocation: "houseB", streetSpawnKey: "outsideHouseB"
   });
 
   const trunk = makeMaterial(0x665748);
@@ -97,13 +106,17 @@ export function buildExterior({ onDoorInteract = () => {} } = {}) {
     group.add(crown);
   }
 
-  interactables.push({ ...houseA.interactable, action: () => onDoorInteract("houseA", "houseA") });
-  interactables.push({ ...houseB.interactable, action: () => onDoorInteract("houseB", "houseB") });
+  interactables.push(houseA.interactable, houseB.interactable);
 
   return {
     id: "street", type: "exterior", group, colliders, interactables,
     doors: { houseA: houseA.door, houseB: houseB.door },
     spawn: { x: 0, z: 0, yaw: 0 },
+    spawns: {
+      start: { x: 0, z: 0, yaw: 0 },
+      outsideHouseA: houseA.spawns.outside,
+      outsideHouseB: houseB.spawns.outside
+    },
     navigation: { bounds: { minX: -29, maxX: 29, minZ: -23, maxZ: 23 } }
   };
 }

@@ -1,10 +1,12 @@
 import * as THREE from "three";
 import { addBox, addWindow, makeMaterial } from "./geometry.js";
 import { createDoor } from "./interactions/door-transition.js";
+import { createDoorSpawns } from "../scenes/door-spawns.js";
 
 export function buildEmptyInterior({
   id, centerZ, frontSide, wallColor = 0xd0ccc0,
-  floorColor = 0x8c8980, doorColor = 0x665649, onExit = () => {}
+  floorColor = 0x8c8980, doorColor = 0x665649,
+  streetSpawnKey, onExit = () => {}
 }) {
   const group = new THREE.Group();
   group.name = "scene-" + id;
@@ -39,14 +41,21 @@ export function buildEmptyInterior({
     id: id + "-exit-door", x: 0, z: frontZ,
     rotationY: frontSide < 0 ? Math.PI : 0, color: doorColor
   });
+  const doorSpawns = createDoorSpawns({ doorZ: frontZ, frontSide });
 
-  const pointInside = frontZ - frontSide * 1.35;
-  const faceYaw = frontSide > 0 ? Math.PI : 0;
+  const exitPoint = {
+    x: 0,
+    z: frontZ - frontSide * 1.12
+  };
   interactables.push({
-    id: id + "-exit", x: 0, z: pointInside, range: 2.45,
-    requiresFacing: true, facingThreshold: 0.18,
+    id: id + "-exit",
+    x: exitPoint.x,
+    z: exitPoint.z,
+    range: 2.35,
+    requiresFacing: true,
+    facingThreshold: 0.2,
     prompt: "E  /  ODEJÍT NA ULICI",
-    action: () => onExit("street", "exit")
+    action: () => onExit("street", "exit", streetSpawnKey)
   });
 
   const lamp = new THREE.PointLight(0xffe8c6, 12, 16, 2);
@@ -57,7 +66,8 @@ export function buildEmptyInterior({
   return {
     id, type: "interior", group, colliders, interactables,
     doors: { exit: door },
-    spawn: { x: 0, z: pointInside, yaw: faceYaw },
+    spawn: doorSpawns.inside,
+    spawns: { entry: doorSpawns.inside },
     navigation: {
       bounds: {
         minX: -5.55, maxX: 5.55,
