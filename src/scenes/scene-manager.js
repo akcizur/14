@@ -90,8 +90,10 @@ export class SceneManager {
 
       source.group.visible = false;
       target.group.visible = true;
-      this.setLocationWorld(target);
+      // Mark the switch before mutating controller data so a partial failure
+      // also restores scene visibility and the active collision world.
       worldSwitched = true;
+      this.setLocationWorld(target);
 
       if (!this.controller.setSpawn(targetSpawn)) {
         throw new Error("Target spawn '" + targetSpawnKey + "' is blocked in location: " + targetId);
