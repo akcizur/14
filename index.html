@@ -4,42 +4,97 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#a8b8bf" />
-    <meta name="description" content="14 — first-person low-poly world with two houses and enterable interiors." />
-    <title>14 / Two-house world</title>
+    <meta name="description" content="14 — klidný first-person svět se dvěma domy a volně přístupnými interiéry." />
+    <title>14 — Dva domy, jedna ulice</title>
   </head>
   <body>
     <main id="app">
       <div id="game" aria-label="První osoba — dva domy"></div>
+
       <header class="hud">
-        <div class="hud-brand">14 <span> / TWO-HOUSE WORLD</span></div>
+        <div class="hud-brand" aria-label="14 — Dva domy, jedna ulice">
+          <span class="brand-mark">14</span>
+          <span class="brand-copy">
+            <strong>DVA DOMY</strong>
+            <small>JEDNA ULICE</small>
+          </span>
+        </div>
         <div class="hud-meta">
-          <span id="locationLabel">STREET / EXTERIOR</span>
+          <div class="location-chip">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span id="locationLabel">ULICE / EXTERIÉR</span>
+          </div>
           <span id="coordinates">X 0.0 · Z 0.0</span>
         </div>
       </header>
+
       <div class="crosshair" aria-hidden="true"></div>
-      <div class="hint" id="hint">WASD POHYB · SHIFT BĚH · SPACE SKOK · MYŠ POHLED · E INTERAKCE</div>
+      <div class="hint" id="hint">WASD POHYB <span>·</span> SHIFT BĚH <span>·</span> MYŠ POHLED <span>·</span> E INTERAKCE</div>
       <div class="toast" id="toast" role="status" aria-live="polite"></div>
       <div class="scene-fade" id="sceneFade" aria-hidden="true"></div>
-      <section class="pause-screen" id="pauseScreen" hidden>
-        <div class="pause-panel">
-          <div class="eyebrow">SYSTEM / PAUSED</div>
-          <h1>PAUSED<span>_</span></h1>
-          <p>Pohyb je pozastaven.</p>
-          <button id="resumeButton" type="button">POKRAČOVAT</button>
-          <small>ESC / ENTER TO CONTINUE</small>
+
+      <section class="welcome-screen" id="welcomeScreen" aria-labelledby="welcomeTitle">
+        <div class="welcome-panel">
+          <div class="welcome-topline">
+            <span class="welcome-mark">14</span>
+            <span class="welcome-kicker">MALÝ SVĚT K PROZKOUMÁNÍ</span>
+          </div>
+          <p class="welcome-overline">DVA DOMY · JEDNA ULICE</p>
+          <h1 id="welcomeTitle">Rozhlédni se.<br /><span>Jsi na místě.</span></h1>
+          <p class="welcome-description">Klidná procházka mezi dvěma domy. Otevři dveře, nahlédni dovnitř a prozkoumej prostor vlastním tempem.</p>
+          <button class="primary-button" id="startButton" type="button">
+            <span>VSTOUPIT DO SVĚTA</span>
+            <span class="button-arrow" aria-hidden="true">↗</span>
+          </button>
+          <div class="control-guide" aria-label="Základní ovládání">
+            <div class="control-item">
+              <span class="key-group"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span>
+              <span>Pohyb</span>
+            </div>
+            <div class="control-item">
+              <span class="key-group"><kbd>MYŠ</kbd></span>
+              <span>Rozhlížení</span>
+            </div>
+            <div class="control-item">
+              <span class="key-group"><kbd>E</kbd></span>
+              <span>Otevřít dveře</span>
+            </div>
+            <div class="control-item touch-control-item">
+              <span class="key-group"><kbd>DOTYK</kbd></span>
+              <span>Joystick a tlačítka</span>
+            </div>
+          </div>
+          <div class="welcome-footer">
+            <span>VOLNÉ PROZKOUMÁVÁNÍ</span>
+            <span>14 / WORLD 01</span>
+          </div>
         </div>
       </section>
+
+      <section class="pause-screen" id="pauseScreen" hidden>
+        <div class="pause-panel">
+          <div class="pause-overline"><span class="status-dot"></span> KLIDNÁ PAUZA</div>
+          <h2>Na chvíli<br /><span>zastaveno.</span></h2>
+          <p>Všechno počká. Až budeš připravený, můžeš pokračovat přesně tam, kde jsi skončil.</p>
+          <button class="primary-button" id="resumeButton" type="button">
+            <span>POKRAČOVAT V PROCHÁZCE</span>
+            <span class="button-arrow" aria-hidden="true">↗</span>
+          </button>
+          <small>ESC / ENTER · POKRAČOVAT</small>
+        </div>
+      </section>
+
       <section class="touch-ui" id="touchUI" aria-label="Dotykové ovládání">
         <div class="move-stick" id="moveStick" aria-label="Joystick pohybu">
-          <div class="stick-ring"></div><div class="stick-knob" id="moveKnob"></div>
+          <div class="stick-ring"></div>
+          <div class="stick-knob" id="moveKnob"></div>
         </div>
         <div class="look-zone" id="touchLookZone" aria-label="Tažením otáčej pohled"></div>
         <div class="touch-actions">
-          <button type="button" data-touch-action="jump">SKOK</button>
-          <button type="button" data-touch-action="run">BĚH</button>
-          <button type="button" data-touch-action="interact">E</button>
-          <button type="button" data-touch-action="pause">Ⅱ</button>
+          <button type="button" data-touch-action="jump" aria-label="Skok">↑</button>
+          <button type="button" data-touch-action="run" aria-label="Drž pro běh">BĚH</button>
+          <button type="button" data-touch-action="interact" aria-label="Interakce">E</button>
+          <button type="button" data-touch-action="pause" aria-label="Pauza">Ⅱ</button>
         </div>
       </section>
     </main>
