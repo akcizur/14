@@ -78,7 +78,10 @@ export function createPlayerController({
       if (distance > range || distance >= nearestDistance) continue;
       if (item.requiresFacing && distance > 0.001) {
         const facing = (dx / distance) * forwardX + (dz / distance) * forwardZ;
-        if (facing < (item.facingThreshold ?? 0.12)) continue;
+        const threshold = Number.isFinite(item.facingThreshold)
+          ? clamp(item.facingThreshold, -1, 1)
+          : 0.12;
+        if (facing < threshold) continue;
       }
       nearest = item;
       nearestDistance = distance;
