@@ -77,7 +77,29 @@ function buildHouse(group, colliders, config) {
     roofPanel.castShadow = true;
     roofPanel.receiveShadow = true;
     group.add(roofPanel);
+
+    // Slim verge boards finish both sloping gable edges without crossing the ridge.
+    for (const edgeX of [-1, 1]) {
+      const verge = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.14, panel.depth), trim);
+      verge.name = id + "-roof-verge-" + (edgeX < 0 ? "left-" : "right-") + (panel.side < 0 ? "north" : "south");
+      verge.position.set(edgeX * (halfW + 0.34), panel.centerY, panel.centerZ);
+      verge.rotation.x = panel.rotationX;
+      verge.castShadow = true;
+      verge.receiveShadow = true;
+      group.add(verge);
+    }
   }
+
+  // A continuous ridge cap hides the join between the two roof planes.
+  const ridgeCap = new THREE.Mesh(
+    new THREE.BoxGeometry(width + 1.05, 0.22, 0.34),
+    trim
+  );
+  ridgeCap.name = id + "-roof-ridge-cap";
+  ridgeCap.position.set(0, roofLayout.ridgeY + 0.08, centerZ);
+  ridgeCap.castShadow = true;
+  ridgeCap.receiveShadow = true;
+  group.add(ridgeCap);
 
   addGableEnd(
     group, id + "-left-gable", -halfW,
@@ -88,8 +110,18 @@ function buildHouse(group, colliders, config) {
     frontZ, rearZ, centerZ, wallHeight, roofLayout.ridgeY, gableWall
   );
 
-  addBox(group, null, id + "-eaves-front", 0, 3.1, frontZ + frontSide * 0.1, width + 0.5, 0.12, 0.35, trim);
-  addBox(group, null, id + "-eaves-rear", 0, 3.1, rearZ - frontSide * 0.1, width + 0.5, 0.12, 0.35, trim);
+  const eaveY = wallHeight - Math.tan(roofLayout.pitch) * 0.78;
+  const eaveBaseY = eaveY - 0.09;
+  addBox(
+    group, null, id + "-eaves-front",
+    0, eaveBaseY, frontZ + frontSide * 0.78,
+    width + 0.5, 0.18, 0.16, trim
+  );
+  addBox(
+    group, null, id + "-eaves-rear",
+    0, eaveBaseY, rearZ - frontSide * 0.78,
+    width + 0.5, 0.18, 0.16, trim
+  );
 
   const windowZ = frontZ + frontSide * 0.135;
   addWindow(group, -3.55, windowY, windowZ, windowWidth, windowHeight, frontSide < 0 ? Math.PI : 0);
