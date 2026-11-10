@@ -13,6 +13,7 @@ const locationLabel = document.getElementById("locationLabel");
 const toast = document.getElementById("toast");
 const hint = document.getElementById("hint");
 const pauseScreen = document.getElementById("pauseScreen");
+const welcomeScreen = document.getElementById("welcomeScreen");
 const fadeElement = document.getElementById("sceneFade");
 const coarsePointer = window.matchMedia?.("(pointer: coarse)").matches ?? false;
 const defaultHint = coarsePointer
@@ -24,7 +25,9 @@ scene.background = new THREE.Color(0xa8b8bf);
 scene.fog = new THREE.Fog(0xa8b8bf, 55, 115);
 const camera = new THREE.PerspectiveCamera(74, 1, 0.05, 150);
 const renderer = new THREE.WebGLRenderer({
-  antialias: true, alpha: false, powerPreference: "high-performance"
+  antialias: true,
+  alpha: false,
+  powerPreference: "high-performance"
 });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -49,14 +52,14 @@ sun.shadow.camera.far = 95;
 sun.shadow.bias = -0.0002;
 scene.add(sun);
 
-const state = { started: true, paused: false, transitioning: false };
+const state = { started: false, paused: false, transitioning: false };
 let sceneManager;
 
 function showToast(message) {
   toast.textContent = message;
   toast.classList.add("visible");
   window.clearTimeout(showToast.timeout);
-  showToast.timeout = window.setTimeout(() => toast.classList.remove("visible"), 1900);
+  showToast.timeout = window.setTimeout(() => toast.classList.remove("visible"), 2200);
 }
 
 function resize() {
@@ -76,12 +79,15 @@ const houseA = buildHouseA({ onExit: transitionTo });
 const houseB = buildHouseB({ onExit: transitionTo });
 
 sceneManager = new SceneManager({
-  root: scene, controller, state, fadeElement,
+  root: scene,
+  controller,
+  state,
+  fadeElement,
   onChange(id) {
     const labels = {
-      street: "STREET / EXTERIOR",
-      houseA: "HOUSE A / INTERIOR",
-      houseB: "HOUSE B / INTERIOR"
+      street: "ULICE / EXTERIÉR",
+      houseA: "DŮM A / INTERIÉR",
+      houseB: "DŮM B / INTERIÉR"
     };
     locationLabel.textContent = labels[id] || id.toUpperCase();
     hint.textContent = defaultHint;
@@ -93,16 +99,24 @@ sceneManager.register(houseB);
 sceneManager.activate("street", "start");
 
 const input = bindInput({
-  element: renderer.domElement, controller, state,
+  element: renderer.domElement,
+  controller,
+  state,
   onInteract: () => controller.doInteract(),
+  onStart: () => showToast("ROZHLÉDNI SE PO ULICI"),
   onPauseChange(paused) {
     pauseScreen.hidden = !paused;
     renderer.domElement.classList.toggle("is-paused", paused);
   }
 });
 
-const resizeObserver = new ResizeObserver(resize);
-resizeObserver.observe(mount);
+let resizeObserver;
+if (typeof ResizeObserver !== "undefined") {
+  resizeObserver = new ResizeObserver(resize);
+  resizeObserver.observe(mount);
+} else {
+  window.addEventListener("resize", resize, { passive: true });
+}
 resize();
 
 let previousTime = 0;
@@ -110,7 +124,8 @@ renderer.setAnimationLoop(time => {
   const deltaTime = previousTime ? Math.min((time - previousTime) / 1000, 0.05) : 0;
   previousTime = time;
   const nearby = controller.update(deltaTime);
-  coordinates.textContent = "X " + controller.player.x.toFixed(1) + " · Z " + controller.player.z.toFixed(1);
+  coordinates.textContent =
+    "X " + controller.player.x.toFixed(1) + " · Z " + controller.player.z.toFixed(1);
 
   if (!state.transitioning && !state.paused && nearby) {
     hint.textContent = nearby.prompt || "E / INTERAKCE";
@@ -121,14 +136,15 @@ renderer.setAnimationLoop(time => {
     else if (state.paused) hint.textContent = "PAUZA";
     else hint.textContent = defaultHint;
   }
+
   renderer.render(scene, camera);
 });
 
 window.addEventListener("beforeunload", () => {
   input.destroy();
-  resizeObserver.disconnect();
+  resizeObserver?.disconnect();
+  if (!resizeObserver) window.removeEventListener("resize", resize);
   renderer.setAnimationLoop(null);
   sceneManager.dispose();
   renderer.dispose();
 });
-showToast("14  /  TWO-HOUSE WORLD");
