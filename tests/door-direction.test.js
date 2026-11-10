@@ -35,3 +35,17 @@ test("interior exit doors swing outward toward the street for both houses", () =
     assert.equal(Math.sign(worldSwingZ(interior.doors.exit)), config.expectedOutsideSide);
   }
 });
+
+
+test("zero-duration door animation finishes deterministically and can be reset", async () => {
+  const street = buildExterior();
+  const door = street.doors.houseA;
+
+  await door.animateOpen(0);
+  assert.equal(door.pivot.rotation.y, door.openAngle);
+  assert.equal(door.collider.enabled, false);
+
+  door.reset();
+  assert.equal(door.pivot.rotation.y, 0);
+  assert.equal(door.collider.enabled, true);
+});
