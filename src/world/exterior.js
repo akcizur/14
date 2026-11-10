@@ -182,7 +182,7 @@ function buildHouse(group, colliders, config) {
       const connector = new THREE.Mesh(connectorGeometry, pipeMaterial);
       connector.name = id + "-" + facadeName + "-gutter-connector-" + (pipeX < 0 ? "left" : "right");
       connector.rotation.x = Math.PI / 2;
-      connector.position.set(pipeX, eaveY - 0.18, (edgeZ + wallZ) / 2);
+      connector.position.set(pipeX, eaveY - 0.27, (edgeZ + wallZ) / 2);
       group.add(connector);
     }
   }
