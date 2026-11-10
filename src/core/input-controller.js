@@ -1,3 +1,21 @@
+// Pure input helpers kept separate so analogue and edge-trigger behavior can be tested.
+export function combineAnalogSources(...sources) {
+  let x = 0, y = 0;
+  for (const source of sources) {
+    x += Number(source?.x) || 0;
+    y += Number(source?.y) || 0;
+  }
+  const length = Math.hypot(x, y);
+  if (length > 1) { x /= length; y /= length; }
+  return { x, y };
+}
+
+export function getGamepadButtonEdges(buttons = [], previousButtons = []) {
+  return buttons.map((button, index) =>
+    Boolean(button?.pressed) && !Boolean(previousButtons[index])
+  );
+}
+
 // Unified keyboard, mouse, touch and Gamepad API input.
 export function bindInput({
   element, controller,
@@ -12,8 +30,13 @@ export function bindInput({
   };
   const knownCodes = new Set([...movementCodes, "ShiftLeft", "ShiftRight"]);
   const listeners = [], runPointers = new Set();
+  const analogSources = {
+    touch: { x: 0, y: 0 },
+    gamepad: { x: 0, y: 0 }
+  };
   const sensitivity = { mouseX: 0.001, mouseY: 0.0009, touchX: 0.003, touchY: 0.002, gamepadLook: 2.2 };
-  let stickPointer = null, lookPointer = null, previousGamepadButtons = [], animationFrame = 0, destroyed = false;
+  let stickPointer = null, lookPointer = null, previousGamepadButtons = [];
+  let animationFrame = 0, destroyed = false, lastGamepadFrame = null, wasTransitioning = false;
   const moveStick = touchRoot.getElementById?.("moveStick") ?? touchRoot.querySelector?.("#moveStick");
   const moveKnob = touchRoot.getElementById?.("moveKnob") ?? touchRoot.querySelector?.("#moveKnob");
   const lookZone = touchRoot.getElementById?.("touchLookZone") ?? touchRoot.querySelector?.("#touchLookZone");
@@ -25,6 +48,20 @@ export function bindInput({
     listeners.push(() => target.removeEventListener(type, callback, options));
   }
   function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
+  function setAnalogSource(source, x, y) {
+    if (!analogSources[source]) analogSources[source] = { x: 0, y: 0 };
+    analogSources[source].x = clamp(Number(x) || 0, -1, 1);
+    analogSources[source].y = clamp(Number(y) || 0, -1, 1);
+    const combined = combineAnalogSources(...Object.values(analogSources));
+    controller.setAnalogMove?.(combined.x, combined.y);
+  }
+  function clearAnalogSources() {
+    for (const source of Object.values(analogSources)) {
+      source.x = 0;
+      source.y = 0;
+    }
+    controller.setAnalogMove?.(0, 0);
+  }
   function setKey(code, pressed, source = "keyboard") {
     if (!sources[source]) sources[source] = Object.create(null);
     knownCodes.add(code);
@@ -44,7 +81,7 @@ export function bindInput({
     const pointerId = stickPointer;
     stickPointer = null;
     try { if (moveStick?.hasPointerCapture?.(pointerId)) moveStick.releasePointerCapture(pointerId); } catch {}
-    controller.setAnalogMove?.(0, 0);
+    setAnalogSource("touch", 0, 0);
     if (moveKnob) moveKnob.style.transform = "translate(0, 0)";
     moveStick?.classList.remove("active");
   }
@@ -60,7 +97,7 @@ export function bindInput({
     for (const code of knownCodes) keysDown[code] = false;
     runPointers.clear();
     touchRoot.querySelector?.('[data-touch-action="run"]')?.classList.remove("is-held");
-    controller.setAnalogMove?.(0, 0);
+    clearAnalogSources();
     releaseStick();
     endLook();
   }
@@ -117,7 +154,7 @@ export function bindInput({
     const x = clamp(dx / radius, -1, 1), y = clamp(-dy / radius, -1, 1);
     const length = Math.hypot(x, y), deadZone = 0.16;
     const scale = length <= deadZone ? 0 : Math.min(1, (length - deadZone) / (1 - deadZone)) / Math.max(length, 0.001);
-    controller.setAnalogMove?.(x * scale, y * scale);
+    setAnalogSource("touch", x * scale, y * scale);
     if (moveKnob) moveKnob.style.transform = "translate(" + clamp(dx, -radius, radius) + "px, " + clamp(dy, -radius, radius) + "px)";
   }
   if (moveStick) {
@@ -189,33 +226,66 @@ export function bindInput({
     const magnitude = Math.abs(value || 0);
     return magnitude < 0.16 ? 0 : Math.sign(value) * ((magnitude - 0.16) / 0.84);
   }
-  function pollGamepad() {
+  function pollGamepad(timestamp = 0) {
     if (destroyed) return;
-    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
-    const pad = Array.from(pads).find(item => item?.connected);
-    if (pad && !state.paused && !state.transitioning) {
-      const leftX = deadZone(pad.axes[0]), leftY = deadZone(pad.axes[1]);
-      controller.setAnalogMove?.(leftX, -leftY);
-      const rightX = deadZone(pad.axes[2]), rightY = deadZone(pad.axes[3]);
-      player.yaw -= rightX * sensitivity.gamepadLook / 60;
-      player.pitch = clamp(player.pitch + rightY * sensitivity.gamepadLook / 60, -1.25, 1.25);
-      const pressed = index => Boolean(pad.buttons[index]?.pressed);
-      const edge = index => pressed(index) && !previousGamepadButtons[index];
-      if (edge(0)) controller.jump?.();
-      if (edge(2)) onInteract();
-      if (edge(9) || edge(1)) togglePause();
-      setKey("ShiftLeft", pressed(6) || pressed(7), "gamepad");
-      previousGamepadButtons = pad.buttons.map(button => button.pressed);
-    } else {
-      controller.setAnalogMove?.(0, 0);
+
+    if (state.transitioning && !wasTransitioning) clearInput();
+    wasTransitioning = Boolean(state.transitioning);
+
+    let frameDelta = 1 / 60;
+    if (Number.isFinite(timestamp)) {
+      if (lastGamepadFrame !== null) frameDelta = clamp((timestamp - lastGamepadFrame) / 1000, 0, 0.05);
+      lastGamepadFrame = timestamp;
+    }
+
+    let pad = null;
+    try {
+      const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+      pad = Array.from(pads).find(item => item?.connected) ?? null;
+    } catch {
+      // Browser privacy settings can temporarily deny access to gamepads.
+    }
+
+    if (!pad) {
+      setAnalogSource("gamepad", 0, 0);
       clearSource("gamepad");
       previousGamepadButtons = [];
+      animationFrame = requestAnimationFrame(pollGamepad);
+      return;
     }
+
+    const currentButtons = pad.buttons.map(button => Boolean(button?.pressed));
+    const edges = getGamepadButtonEdges(pad.buttons, previousGamepadButtons);
+    previousGamepadButtons = currentButtons;
+
+    // Pause buttons must be processed even while paused, otherwise the gamepad
+    // could enter the pause screen but could never leave it.
+    if (edges[9] || edges[1]) togglePause();
+
+    if (!state.paused && !state.transitioning && state.started) {
+      const leftX = deadZone(pad.axes[0]), leftY = deadZone(pad.axes[1]);
+      setAnalogSource("gamepad", leftX, -leftY);
+
+      const rightX = deadZone(pad.axes[2]), rightY = deadZone(pad.axes[3]);
+      player.yaw -= rightX * sensitivity.gamepadLook * frameDelta;
+      player.pitch = clamp(
+        player.pitch + rightY * sensitivity.gamepadLook * frameDelta,
+        -1.25, 1.25
+      );
+
+      if (edges[0]) controller.jump?.();
+      if (edges[2]) onInteract();
+      setKey("ShiftLeft", Boolean(pad.buttons[6]?.pressed || pad.buttons[7]?.pressed), "gamepad");
+    } else {
+      setAnalogSource("gamepad", 0, 0);
+      clearSource("gamepad");
+    }
+
     animationFrame = requestAnimationFrame(pollGamepad);
   }
   listen(window, "gamepaddisconnected", () => {
     clearSource("gamepad");
-    controller.setAnalogMove?.(0, 0);
+    setAnalogSource("gamepad", 0, 0);
   });
   animationFrame = requestAnimationFrame(pollGamepad);
 
