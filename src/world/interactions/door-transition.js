@@ -24,13 +24,13 @@ export function createDoor(group, colliders, {
 
   const pivot = new THREE.Group();
   pivot.name = id + "-hinge-pivot";
-  pivot.position.set(-0.57, 0, 0.035);
+  pivot.position.set(-0.60, 0, 0.035);
   assembly.add(pivot);
 
   const leafMaterial = makeMaterial(color, { roughness: 0.86 });
-  const leaf = new THREE.Mesh(new THREE.BoxGeometry(1.12, 2.12, 0.13), leafMaterial);
+  const leaf = new THREE.Mesh(new THREE.BoxGeometry(1.22, 2.18, 0.13), leafMaterial);
   leaf.name = id + "-door-leaf";
-  leaf.position.set(0.56, 1.06, 0);
+  leaf.position.set(0.60, 1.06, 0);
   leaf.castShadow = true;
   leaf.receiveShadow = true;
   pivot.add(leaf);
@@ -39,7 +39,7 @@ export function createDoor(group, colliders, {
     new THREE.BoxGeometry(0.74, 1.55, 0.035),
     makeMaterial(new THREE.Color(color).multiplyScalar(0.78))
   );
-  inset.position.set(0.56, 1.08, 0.083);
+  inset.position.set(0.60, 1.08, 0.083);
   pivot.add(inset);
   const insetBack = inset.clone();
   insetBack.position.z = -0.083;
@@ -47,9 +47,9 @@ export function createDoor(group, colliders, {
 
   const handleGeometry = new THREE.SphereGeometry(0.055, 10, 8);
   const handleFront = new THREE.Mesh(handleGeometry, HANDLE);
-  handleFront.position.set(0.94, 1.03, 0.105);
+  handleFront.position.set(0.99, 1.03, 0.105);
   const handleBack = new THREE.Mesh(handleGeometry, HANDLE);
-  handleBack.position.set(0.94, 1.03, -0.105);
+  handleBack.position.set(0.99, 1.03, -0.105);
   pivot.add(handleFront, handleBack);
 
   const collider = {

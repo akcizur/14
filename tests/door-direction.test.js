@@ -49,3 +49,24 @@ test("zero-duration door animation finishes deterministically and can be reset",
   assert.equal(door.pivot.rotation.y, 0);
   assert.equal(door.collider.enabled, true);
 });
+
+test("closed door leaf overlaps the frame opening on every edge without visible gaps", () => {
+  const street = buildExterior();
+  for (const id of ["house-a-front-door", "house-b-front-door"]) {
+    const door = street.doors[id === "house-a-front-door" ? "houseA" : "houseB"];
+    const leaf = door.pivot.getObjectByName(id + "-door-leaf");
+    assert.ok(leaf, id + " must have a door leaf");
+
+    const left = door.pivot.position.x + leaf.position.x - leaf.geometry.parameters.width / 2;
+    const right = door.pivot.position.x + leaf.position.x + leaf.geometry.parameters.width / 2;
+    const bottom = leaf.position.y - leaf.geometry.parameters.height / 2;
+    const top = leaf.position.y + leaf.geometry.parameters.height / 2;
+
+    // The frame opening is X -0.58..0.58, with its head starting at Y 2.10.
+    assert.ok(left < -0.58, id + " must overlap the left jamb");
+    assert.ok(right > 0.58, id + " must overlap the right jamb");
+    assert.ok(bottom < 0.03, id + " must overlap the threshold");
+    assert.ok(top > 2.10, id + " must overlap the head frame");
+    assert.equal(door.collider.enabled, true);
+  }
+});
