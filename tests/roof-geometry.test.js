@@ -22,6 +22,10 @@ for (const centerZ of [-17, 17]) {
     assert.equal(roof.panels[0].rotationX, -PITCH);
     assert.equal(roof.panels[1].rotationX, PITCH);
     assert.ok(roof.ridgeY > WALL_HEIGHT);
+    const innerEdges = roof.panels.map(panel => panel.centerZ - panel.side * panel.depth / 2);
+    assert.ok(innerEdges.every(z => Math.abs(z - centerZ) < 1e-10));
+    const outerEdges = roof.panels.map(panel => panel.centerZ + panel.side * panel.depth / 2);
+    assert.ok(outerEdges.every(z => Math.abs(Math.abs(z - centerZ) - (HALF_DEPTH + 0.8)) < 1e-10));
 
     for (const panel of roof.panels) {
       assert.ok(Math.abs(roofHeightAt(panel, centerZ) - roof.ridgeY) < 1e-10);
