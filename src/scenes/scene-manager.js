@@ -38,9 +38,22 @@ export class SceneManager {
     const location = this.locations.get(id);
     if (!location) throw new Error("Unknown location: " + id);
     const spawn = this.getSpawn(location, spawnKey);
+    const previous = this.locations.get(this.currentId);
+    const previousSpawn = previous ? {
+      x: this.controller.player.x,
+      z: this.controller.player.z,
+      yaw: this.controller.player.yaw,
+      pitch: this.controller.player.pitch
+    } : null;
 
     this.setLocationWorld(location);
     if (!this.controller.setSpawn(spawn)) {
+      if (previous) {
+        this.setLocationWorld(previous);
+        this.controller.setSpawn(previousSpawn);
+      } else {
+        this.controller.setWorld({});
+      }
       throw new Error("Invalid or obstructed spawn '" + spawnKey + "' for location: " + id);
     }
 
