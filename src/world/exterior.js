@@ -138,8 +138,54 @@ function buildHouse(group, colliders, config) {
   );
 
   const windowZ = frontZ + frontSide * 0.135;
-  addWindow(group, -3.55, windowY, windowZ, windowWidth, windowHeight, frontSide < 0 ? Math.PI : 0);
-  addWindow(group, 3.55, windowY, windowZ, windowWidth, windowHeight, frontSide < 0 ? Math.PI : 0);
+  const windowRotation = frontSide < 0 ? Math.PI : 0;
+  addWindow(group, -3.55, windowY, windowZ, windowWidth, windowHeight, windowRotation);
+  addWindow(group, 3.55, windowY, windowZ, windowWidth, windowHeight, windowRotation);
+
+  const sillMaterial = makeMaterial(0xe0dacc, { roughness: 0.78 });
+  for (const [facadeName, facadeZ, outwardSide, centers, sillWidth, sillY] of [
+    ["front", windowZ, frontSide, [-3.55, 3.55], 1.95, windowY - windowHeight / 2 - 0.08],
+    ["rear", rearWindowZ, -frontSide, [-3.5, 3.5], 2.0, rearWindowY - rearWindowHeight / 2 - 0.08]
+  ]) {
+    centers.forEach((windowX, index) => {
+      addBox(
+        group, null, id + "-" + facadeName + "-window-sill-" + index,
+        windowX, sillY, facadeZ + outwardSide * 0.035,
+        sillWidth, 0.12, 0.22, sillMaterial
+      );
+    });
+  }
+
+  // Gutters and downpipes finish the roof edge and anchor its overhang visually.
+  const gutterGeometry = new THREE.CylinderGeometry(0.055, 0.055, width + 0.5, 8);
+  const pipeGeometry = new THREE.CylinderGeometry(0.045, 0.045, 2.88, 8);
+  const connectorGeometry = new THREE.CylinderGeometry(0.04, 0.04, 0.66, 8);
+  const pipeMaterial = makeMaterial(0x626966, { metalness: 0.22, roughness: 0.64 });
+  for (const [facadeName, edgeZ, wallZ] of [
+    ["front", frontZ + frontSide * 0.78, frontZ + frontSide * 0.16],
+    ["rear", rearZ - frontSide * 0.78, rearZ - frontSide * 0.16]
+  ]) {
+    const gutter = new THREE.Mesh(gutterGeometry, pipeMaterial);
+    gutter.name = id + "-" + facadeName + "-gutter";
+    gutter.rotation.z = Math.PI / 2;
+    gutter.position.set(0, eaveY - 0.27, edgeZ);
+    gutter.castShadow = true;
+    group.add(gutter);
+
+    for (const pipeX of [-5.65, 5.65]) {
+      const pipe = new THREE.Mesh(pipeGeometry, pipeMaterial);
+      pipe.name = id + "-" + facadeName + "-downpipe-" + (pipeX < 0 ? "left" : "right");
+      pipe.position.set(pipeX, 1.44, wallZ);
+      pipe.castShadow = true;
+      group.add(pipe);
+
+      const connector = new THREE.Mesh(connectorGeometry, pipeMaterial);
+      connector.name = id + "-" + facadeName + "-gutter-connector-" + (pipeX < 0 ? "left" : "right");
+      connector.rotation.x = Math.PI / 2;
+      connector.position.set(pipeX, eaveY - 0.18, (edgeZ + wallZ) / 2);
+      group.add(connector);
+    }
+  }
 
   const door = createDoor(group, colliders, {
     id: id + "-front-door", x: 0, z: frontZ,
