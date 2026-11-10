@@ -94,3 +94,29 @@ test("transition state locks movement and interaction", () => {
   assert.equal(controller.jump(), false);
   assert.equal(controller.doInteract(), false);
 });
+
+
+test("navigation bounds include the player's collision radius", () => {
+  const state = { started: true, paused: false };
+  const controller = createPlayerController({ camera: createCamera(), state });
+  controller.setWorld({
+    navigation: { bounds: { minX: -4, maxX: 4, minZ: -4, maxZ: 4 } }
+  });
+  assert.equal(controller.setSpawn({ x: 3.7, z: 0, yaw: 0 }), true);
+  assert.equal(controller.setSpawn({ x: 3.8, z: 0, yaw: 0 }), false);
+  assert.equal(controller.setSpawn({ x: Number.NaN, z: 0, yaw: 0 }), false);
+});
+
+test("malformed interaction points are ignored instead of hijacking the prompt", () => {
+  const state = { started: true, paused: false };
+  const controller = createPlayerController({ camera: createCamera(), state });
+  controller.setWorld({
+    interactables: [
+      { id: "invalid", x: Number.NaN, z: 0, range: 10, prompt: "INVALID" },
+      { id: "negative-range", x: 0, z: 0, range: -1, prompt: "INVALID" },
+      { id: "valid", x: 0, z: -1, range: 2, prompt: "VALID" }
+    ]
+  });
+  controller.setSpawn({ x: 0, z: 0, yaw: 0 });
+  assert.equal(controller.update(1 / 60)?.id, "valid");
+});
