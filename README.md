@@ -14,6 +14,9 @@ A small first-person Three.js environment built around one street, two opposing 
 - Scene transitions use a short fade and preserve the exact source position if a destination spawn is invalid.
 - One shared camera, renderer, FPS controller and input layer are used across all locations.
 - Each location owns its own colliders, interaction points and navigation bounds.
+- Street trees have solid trunk collision; the player no longer walks through their bases.
+- The welcome screen explains the controls before play, and the pause screen restores mouse capture when resumed.
+- Nearby doors are signaled by both the interaction hint and a highlighted reticle.
 
 Interiors are intentionally unfurnished. They currently contain only the floor, walls, ceiling, windows, lighting and door opening.
 
@@ -43,7 +46,7 @@ npm run preview
 | Space | Jump |
 | Mouse | Look (click the world to capture the pointer) |
 | E | Enter / leave a house |
-| Escape | Pause / resume |
+| Escape / Enter | Start, pause / resume |
 | Touch | Left joystick to move, drag right side to look, action buttons |
 | Gamepad | Left stick move, right stick look, A jump, X interact, triggers sprint, Start / B pause |
 
