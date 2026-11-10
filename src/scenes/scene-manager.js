@@ -128,7 +128,8 @@ export class SceneManager {
   fade(visible) {
     if (!this.fadeElement) return Promise.resolve();
     this.fadeElement.classList.toggle("is-visible", visible);
-    return new Promise(resolve => window.setTimeout(resolve, 230));
+    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    return new Promise(resolve => window.setTimeout(resolve, reducedMotion ? 0 : 230));
   }
 
   dispose() {
