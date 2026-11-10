@@ -85,12 +85,25 @@ export function createPlayerController({
     }
     return nearest;
   }
+  function reportInteractionError(error) {
+    const message = error?.message || "Interakce se nezdařila.";
+    ui.showToast?.("CHYBA / " + message);
+  }
   function doInteract() {
     if (state.transitioning || state.paused) return false;
     const item = nearestInteractable();
     if (!item) return false;
-    item.action?.(item, player);
-    return true;
+
+    try {
+      const result = item.action?.(item, player);
+      if (result && typeof result.then === "function") {
+        result.catch(reportInteractionError);
+      }
+      return true;
+    } catch (error) {
+      reportInteractionError(error);
+      return false;
+    }
   }
   function syncCamera(deltaTime = 1 / 60) {
     const isMoving = Boolean(state.started) && !state.paused && !state.transitioning && bodySpeed > 0.06;
