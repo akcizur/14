@@ -92,8 +92,17 @@ export function buildEmptyInterior({
     action: () => onExit("street", "exit", streetSpawnKey)
   });
 
-  const lamp = new THREE.PointLight(0xffe8c6, 12, 16, 2);
-  lamp.position.set(0, 2.55, centerZ);
+  const fixtureBody = makeMaterial(0x77766f, { roughness: 0.72 });
+  const fixtureGlow = makeMaterial(0xffe9c9, {
+    emissive: 0xffd9a6,
+    emissiveIntensity: 0.72,
+    roughness: 0.34
+  });
+  addBox(group, null, id + "-ceiling-light-body", 0, 2.98, centerZ, 0.92, 0.08, 0.52, fixtureBody);
+  addBox(group, null, id + "-ceiling-light-diffuser", 0, 2.94, centerZ, 0.76, 0.04, 0.36, fixtureGlow);
+
+  const lamp = new THREE.PointLight(0xffe8c6, 10, 16, 2);
+  lamp.position.set(0, 2.72, centerZ);
   group.add(lamp);
   group.add(new THREE.HemisphereLight(0xe8e5d9, 0x77746d, 0.42));
 
