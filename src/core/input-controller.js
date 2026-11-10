@@ -119,7 +119,7 @@ export function bindInput({
   function onKeyDown(event) {
     const target = event.target;
     if (target instanceof Element && (target.matches("input, textarea, select") || target.isContentEditable)) return;
-    if (event.code === "Escape") { event.preventDefault(); togglePause(); return; }
+    if (event.code === "Escape") { event.preventDefault(); if (!event.repeat) togglePause(); return; }
     if (event.code === "Enter" && state.paused) { event.preventDefault(); setPaused(false); return; }
     if (state.transitioning) return;
     if (event.code === "Space") { event.preventDefault(); if (!event.repeat && !state.paused) controller.jump?.(); return; }
