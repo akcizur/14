@@ -166,9 +166,50 @@ button:focus-visible { outline: 2px solid #d7ff91; outline-offset: 4px; }
   background: #080d0e;
   opacity: 0;
   pointer-events: none;
-  transition: opacity .24s ease;
+  transition: opacity .2s ease;
 }
 .scene-fade.is-visible { opacity: 1; }
+.scene-fade.is-motion {
+  opacity: 1;
+  background: transparent;
+  -webkit-backdrop-filter: blur(1.1px);
+  backdrop-filter: blur(1.1px);
+}
+.scene-fade.is-motion::before {
+  content: "";
+  position: absolute;
+  inset: -8%;
+  pointer-events: none;
+  background: repeating-conic-gradient(
+    from 0deg at 50% 50%,
+    transparent 0deg 5.1deg,
+    rgba(238, 246, 239, .12) 5.25deg 5.45deg,
+    transparent 5.6deg 8deg
+  );
+  -webkit-mask-image: radial-gradient(ellipse at center, transparent 0 16%, #000 76%);
+  mask-image: radial-gradient(ellipse at center, transparent 0 16%, #000 76%);
+  filter: blur(1.8px);
+  animation: door-motion-pass .62s cubic-bezier(.18,.72,.22,1) both;
+}
+.scene-fade.is-motion::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 26%, rgba(5, 9, 10, .2) 100%);
+  opacity: .8;
+  animation: door-motion-vignette .62s ease-out both;
+}
+@keyframes door-motion-pass {
+  from { opacity: 0; transform: scale(.94); }
+  24% { opacity: .72; }
+  to { opacity: 0; transform: scale(1.18); }
+}
+@keyframes door-motion-vignette {
+  from { opacity: 0; }
+  30% { opacity: .82; }
+  to { opacity: 0; }
+}
 
 .welcome-screen {
   position: fixed;

@@ -84,25 +84,29 @@ export class SceneManager {
     this.state.transitioning = true;
     let worldSwitched = false;
 
-    try {
-      await door.animateOpen(650);
-      await this.fade(true);
-
+    const switchWorld = () => {
       source.group.visible = false;
       target.group.visible = true;
-      // Mark the switch before mutating controller data so a partial failure
-      // also restores scene visibility and the active collision world.
+      // Switch the active collision and interaction data exactly as the player
+      // crosses the door plane, not before the movement begins.
       worldSwitched = true;
       this.setLocationWorld(target);
+      this.currentId = targetId;
+      this.onChange(targetId, target);
+    };
 
+    try {
+      await door.animateOpen(650);
+      this.beginMotion();
+
+      await this.animatePassage(previousSpawn, targetSpawn, switchWorld, 620);
+
+      if (!worldSwitched) switchWorld();
       if (!this.controller.setSpawn(targetSpawn)) {
         throw new Error("Target spawn '" + targetSpawnKey + "' is blocked in location: " + targetId);
       }
 
-      this.currentId = targetId;
-      this.onChange(targetId, target);
       door.reset();
-      await this.fade(false);
       return true;
     } catch (error) {
       door.reset();
@@ -110,19 +114,87 @@ export class SceneManager {
         target.group.visible = false;
         source.group.visible = true;
         this.setLocationWorld(source);
-        this.controller.setSpawn(previousSpawn);
         this.currentId = source.id;
         this.onChange(source.id, source);
       }
-      if (this.fadeElement?.classList.contains("is-visible")) {
-        await this.fade(false);
-      } else {
-        this.fadeElement?.classList.remove("is-visible");
-      }
+      this.controller.setSpawn(previousSpawn);
       throw error;
     } finally {
+      this.endMotion();
       this.state.transitioning = false;
     }
+  }
+
+  beginMotion() {
+    this.fadeElement?.classList.remove("is-visible");
+    this.fadeElement?.classList.add("is-motion");
+  }
+
+  endMotion() {
+    this.fadeElement?.classList.remove("is-motion", "is-visible");
+  }
+
+  animatePassage(from, to, onMidpoint, duration = 620) {
+    const reducedMotion = typeof window !== "undefined"
+      && (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false);
+    const frameRequest = typeof requestAnimationFrame === "function"
+      ? requestAnimationFrame
+      : null;
+    const setPose = this.controller.setTransitionPose
+      ? this.controller.setTransitionPose.bind(this.controller)
+      : this.controller.setSpawn.bind(this.controller);
+
+    const finishImmediately = () => {
+      onMidpoint();
+      if (!setPose(to)) throw new Error("Unable to place the player at the destination door.");
+      return Promise.resolve();
+    };
+
+    if (reducedMotion || !frameRequest || duration <= 0) {
+      return finishImmediately();
+    }
+
+    const yawDelta = Math.atan2(
+      Math.sin((to.yaw ?? from.yaw) - (from.yaw ?? 0)),
+      Math.cos((to.yaw ?? from.yaw) - (from.yaw ?? 0))
+    );
+    const startTime = performance.now();
+    let crossed = false;
+
+    return new Promise((resolve, reject) => {
+      const frame = now => {
+        try {
+          const progress = Math.max(0, Math.min(1, (now - startTime) / duration));
+          const eased = progress < 0.5
+            ? 4 * progress * progress * progress
+            : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+          if (!crossed && progress >= 0.5) {
+            onMidpoint();
+            crossed = true;
+          }
+
+          const pose = {
+            x: from.x + (to.x - from.x) * eased,
+            z: from.z + (to.z - from.z) * eased,
+            yaw: (from.yaw ?? 0) + yawDelta * eased,
+            pitch: (from.pitch ?? -0.04)
+              + ((to.pitch ?? -0.04) - (from.pitch ?? -0.04)) * eased
+          };
+
+          if (!setPose(pose)) {
+            throw new Error("Door passage animation could not update the player pose.");
+          }
+
+          if (progress < 1) frameRequest(frame);
+          else resolve();
+        } catch (error) {
+          reject(error);
+        }
+      };
+
+      frameRequest(frame);
+    });
   }
 
   fade(visible) {

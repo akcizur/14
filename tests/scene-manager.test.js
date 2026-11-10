@@ -191,3 +191,36 @@ test("a partial world-data switch restores the source scene before rejecting", a
   assert.deepEqual(controller.player, { x: 0, z: 0, yaw: 0, pitch: -0.04 });
   assert.equal(state.transitioning, false);
 });
+
+test("door transition moves through the open doorway and switches worlds mid-passage", async () => {
+  const { manager, controller } = createFixture();
+  manager.activate("street", "start");
+  const street = manager.locations.get("street");
+  const house = manager.locations.get("houseA");
+  const previousSetSpawn = controller.setSpawn.bind(controller);
+  let midpointWorld = null;
+  controller.setTransitionPose = pose => {
+    Object.assign(controller.player, pose);
+    return true;
+  };
+  manager.animatePassage = async (from, to, onMidpoint) => {
+    assert.deepEqual(from, { x: 0, z: 0, yaw: 0, pitch: -0.04 });
+    assert.deepEqual(to, house.spawns.entry);
+    assert.equal(street.group.visible, true);
+    assert.equal(house.group.visible, false);
+    onMidpoint();
+    midpointWorld = controller.currentWorld.colliders[0];
+    assert.equal(street.group.visible, false);
+    assert.equal(house.group.visible, true);
+    controller.setTransitionPose(to);
+  };
+  controller.setSpawn = spawn => {
+    const success = previousSetSpawn(spawn);
+    return success;
+  };
+
+  assert.equal(await manager.transition("houseA", "houseA", "entry"), true);
+  assert.equal(midpointWorld, "house-A-colliders");
+  assert.equal(controller.player.z, -13.6);
+  assert.equal(manager.currentId, "houseA");
+});

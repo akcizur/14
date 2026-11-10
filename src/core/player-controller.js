@@ -167,6 +167,41 @@ export function createPlayerController({
     camera.rotation.z = 0;
     return true;
   }
+  // Cinematic door passage: intentionally bypasses collision checks while the
+  // SceneManager owns the transition lock and interpolates the player through
+  // the doorway. Normal movement always continues to use canMove().
+  function setTransitionPose(pose = {}) {
+    if (!Number.isFinite(pose.x) || !Number.isFinite(pose.z)) return false;
+
+    player.x = pose.x;
+    player.z = pose.z;
+    player.elevation = 0;
+    player.jumpHeight = 0;
+    jumpVelocity = 0;
+    player.yaw = Number.isFinite(pose.yaw) ? pose.yaw : player.yaw;
+    player.pitch = Number.isFinite(pose.pitch) ? pose.pitch : player.pitch;
+
+    cameraX = player.x;
+    cameraY = settings.eyeHeight;
+    cameraZ = player.z;
+    cameraYaw = player.yaw;
+    cameraPitch = player.pitch;
+    bodySpeed = 0;
+    walkBlend = 0;
+    bodyLean = 0;
+    bodyRoll = 0;
+    analogMove.x = 0;
+    analogMove.y = 0;
+    for (const code of Object.keys(keysDown)) delete keysDown[code];
+
+    camera.position.set(cameraX, cameraY, cameraZ);
+    camera.rotation.order = "YXZ";
+    camera.rotation.x = cameraPitch;
+    camera.rotation.y = cameraYaw;
+    camera.rotation.z = 0;
+    return true;
+  }
+
   function setWorld({
     colliders: nextColliders = [],
     interactables: nextInteractables = [],
@@ -222,7 +257,7 @@ export function createPlayerController({
   }
 
   return {
-    player, keysDown, update, jump, doInteract, setSpawn, setWorld, setAnalogMove, syncCamera,
+    player, keysDown, update, jump, doInteract, setSpawn, setTransitionPose, setWorld, setAnalogMove, syncCamera,
     getBlockingCollidersAt: (x, z) => blockingCollidersAt(x, z).map(collider => ({
       name: collider.name ?? "(unnamed collider)",
       minX: collider.minX, maxX: collider.maxX,

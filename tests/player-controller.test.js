@@ -180,3 +180,21 @@ test("invalid facing thresholds fall back to the safe default", () => {
   controller.setSpawn({ x: 0, z: 0, yaw: 0 });
   assert.equal(controller.update(1 / 60)?.id, "door");
 });
+
+test("cinematic door passage updates the camera pose through a solid doorway", () => {
+  const camera = createCamera();
+  const controller = createPlayerController({
+    camera,
+    colliders: [{ name: "door", minX: -1, maxX: 1, minZ: -0.2, maxZ: 0.2 }],
+    state: { started: true, paused: false, transitioning: true }
+  });
+
+  assert.equal(controller.setTransitionPose({ x: 0.1, z: -0.6, yaw: 0.2, pitch: -0.1 }), true);
+  assert.deepEqual(
+    { x: controller.player.x, z: controller.player.z, yaw: controller.player.yaw, pitch: controller.player.pitch },
+    { x: 0.1, z: -0.6, yaw: 0.2, pitch: -0.1 }
+  );
+  assert.equal(camera.position.z, -0.6);
+  assert.equal(camera.rotation.y, 0.2);
+  assert.equal(controller.setTransitionPose({ x: Number.NaN, z: 0 }), false);
+});
