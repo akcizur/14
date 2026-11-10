@@ -160,3 +160,23 @@ test("rejected asynchronous scene interactions are reported", async () => {
   await Promise.resolve();
   assert.deepEqual(messages, ["CHYBA / transition failure"]);
 });
+
+
+test("invalid facing thresholds fall back to the safe default", () => {
+  const controller = createPlayerController({
+    camera: createCamera(),
+    state: { started: true, paused: false }
+  });
+  controller.setWorld({
+    interactables: [{
+      id: "door",
+      x: 0,
+      z: -1,
+      range: 2,
+      requiresFacing: true,
+      facingThreshold: Number.NaN
+    }]
+  });
+  controller.setSpawn({ x: 0, z: 0, yaw: 0 });
+  assert.equal(controller.update(1 / 60)?.id, "door");
+});
