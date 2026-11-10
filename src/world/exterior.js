@@ -55,7 +55,7 @@ function buildHouse(group, colliders, config) {
     spawns: doorSpawns,
     interactable: {
       id: "enter-" + id,
-      x: 0, z: doorSpawns.outside.z,
+      x: 0, z: frontZ,
       range: 2.45,
       requiresFacing: true,
       facingThreshold: 0.18,
