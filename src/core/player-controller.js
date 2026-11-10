@@ -47,8 +47,13 @@ export function createPlayerController({
     );
   }
   function canMove(x, z) {
+    if (!Number.isFinite(x) || !Number.isFinite(z)) return false;
     const bounds = activeNavigation?.bounds;
-    if (bounds && (x < bounds.minX || x > bounds.maxX || z < bounds.minZ || z > bounds.maxZ)) return false;
+    const radius = player.radius;
+    if (bounds && (
+      x - radius < bounds.minX || x + radius > bounds.maxX ||
+      z - radius < bounds.minZ || z + radius > bounds.maxZ
+    )) return false;
     return blockingCollidersAt(x, z).length === 0;
   }
   function tryMoveTo(x, z) {
@@ -65,10 +70,12 @@ export function createPlayerController({
     let nearest = null, nearestDistance = Infinity;
     const forwardX = -Math.sin(player.yaw), forwardZ = -Math.cos(player.yaw);
     for (const item of activeInteractables) {
-      if (item.enabled === false) continue;
+      if (item.enabled === false || !Number.isFinite(item.x) || !Number.isFinite(item.z)) continue;
+      const range = item.range ?? 2;
+      if (!Number.isFinite(range) || range < 0) continue;
       const dx = item.x - player.x, dz = item.z - player.z;
       const distance = Math.hypot(dx, dz);
-      if (distance > (item.range ?? 2) || distance >= nearestDistance) continue;
+      if (distance > range || distance >= nearestDistance) continue;
       if (item.requiresFacing && distance > 0.001) {
         const facing = (dx / distance) * forwardX + (dz / distance) * forwardZ;
         if (facing < (item.facingThreshold ?? 0.12)) continue;
