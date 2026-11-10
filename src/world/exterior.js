@@ -2,6 +2,24 @@ import * as THREE from "three";
 import { addBox, addPlane, addWindow, makeMaterial } from "./geometry.js";
 import { createDoor } from "./interactions/door-transition.js";
 import { createDoorSpawns } from "../scenes/door-spawns.js";
+import { createGableRoofLayout } from "./roof-geometry.js";
+
+function addGableEnd(group, name, x, frontZ, rearZ, centerZ, wallHeight, ridgeY, material) {
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute([
+    x, wallHeight, rearZ,
+    x, wallHeight, frontZ,
+    x, ridgeY, centerZ
+  ], 3));
+  geometry.computeVertexNormals();
+
+  const gable = new THREE.Mesh(geometry, material);
+  gable.name = name;
+  gable.castShadow = true;
+  gable.receiveShadow = true;
+  group.add(gable);
+  return gable;
+}
 
 function buildHouse(group, colliders, config) {
   const { id, centerZ, frontSide, wallColor, roofColor, doorColor, targetLocation, streetSpawnKey } = config;
@@ -11,6 +29,7 @@ function buildHouse(group, colliders, config) {
   const rearZ = centerZ - frontSide * halfD;
   const wall = makeMaterial(wallColor);
   const roof = makeMaterial(roofColor, { roughness: 0.98 });
+  const gableWall = makeMaterial(wallColor, { side: THREE.DoubleSide });
   const trim = makeMaterial(0xe0dacc);
   const foundation = makeMaterial(0x777b75);
 
@@ -25,15 +44,36 @@ function buildHouse(group, colliders, config) {
   addBox(group, colliders, id + "-front-wall-right", doorGap / 2 + sideWidth / 2, 0, frontZ, sideWidth, wallHeight, 0.26, wall, true);
   addBox(group, null, id + "-front-lintel", 0, 2.22, frontZ, doorGap, 0.92, 0.26, wall);
 
-  for (const side of [-1, 1]) {
-    const roofPanel = new THREE.Mesh(new THREE.BoxGeometry(width + 0.85, 0.22, depth / 2 + 0.8), roof);
-    roofPanel.position.set(0, 3.45, centerZ + side * 2.55);
-    roofPanel.rotation.x = side * -frontSide * 0.34;
+  const roofLayout = createGableRoofLayout({
+    centerZ,
+    halfDepth: halfD,
+    wallHeight
+  });
+
+  for (const panel of roofLayout.panels) {
+    const roofPanel = new THREE.Mesh(
+      new THREE.BoxGeometry(width + 0.85, 0.22, panel.depth),
+      roof
+    );
+    roofPanel.name = id + "-roof-slope-" + (panel.side < 0 ? "negative-z" : "positive-z");
+    roofPanel.position.set(0, panel.centerY, panel.centerZ);
+    roofPanel.rotation.x = panel.rotationX;
     roofPanel.castShadow = true;
     roofPanel.receiveShadow = true;
     group.add(roofPanel);
   }
+
+  addGableEnd(
+    group, id + "-left-gable", -halfW,
+    frontZ, rearZ, centerZ, wallHeight, roofLayout.ridgeY, gableWall
+  );
+  addGableEnd(
+    group, id + "-right-gable", halfW,
+    frontZ, rearZ, centerZ, wallHeight, roofLayout.ridgeY, gableWall
+  );
+
   addBox(group, null, id + "-eaves-front", 0, 3.1, frontZ + frontSide * 0.1, width + 0.5, 0.12, 0.35, trim);
+  addBox(group, null, id + "-eaves-rear", 0, 3.1, rearZ - frontSide * 0.1, width + 0.5, 0.12, 0.35, trim);
 
   const windowZ = frontZ - frontSide * 0.035;
   addWindow(group, -3.55, 1.85, windowZ, 1.75, 1.15, frontSide < 0 ? Math.PI : 0);
