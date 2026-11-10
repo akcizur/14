@@ -20,6 +20,7 @@ export function createDoor(group, colliders, {
   addBox(assembly, null, id + "-frame-left", -0.64, 0, 0, 0.12, 2.28, 0.22, FRAME);
   addBox(assembly, null, id + "-frame-right", 0.64, 0, 0, 0.12, 2.28, 0.22, FRAME);
   addBox(assembly, null, id + "-frame-top", 0, 2.16, 0, 1.4, 0.12, 0.22, FRAME);
+  addBox(assembly, null, id + "-threshold", 0, -0.03, 0, 1.34, 0.06, 0.3, FRAME);
 
   const pivot = new THREE.Group();
   pivot.name = id + "-hinge-pivot";
