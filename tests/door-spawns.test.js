@@ -57,3 +57,15 @@ test("after exiting either house, the entry prompt stays hidden until the player
 test("invalid door orientation is rejected", () => {
   assert.throws(() => createDoorSpawns({ doorZ: 0, frontSide: 0 }), TypeError);
 });
+
+
+test("invalid door spawn distances are rejected", () => {
+  assert.throws(
+    () => createDoorSpawns({ doorZ: 0, frontSide: 1, outsideDistance: 0 }),
+    RangeError
+  );
+  assert.throws(
+    () => createDoorSpawns({ doorZ: 0, frontSide: 1, insideDistance: Number.NaN }),
+    RangeError
+  );
+});
