@@ -196,6 +196,7 @@ export function createTraffic({ colliders = [], random = Math.random } = {}) {
   const group = new THREE.Group();
   group.name = "street-traffic";
   const vehicles = [];
+  const crossingReservations = [];
   const lanes = [
     { id: "northbound", z: -LANE_OFFSET, direction: 1, nextSpawn: randomBetween(random, 2.1, 3.7) },
     { id: "southbound", z: LANE_OFFSET, direction: -1, nextSpawn: randomBetween(random, 2.4, 4.0) }
@@ -235,9 +236,11 @@ export function createTraffic({ colliders = [], random = Math.random } = {}) {
       baseSpeed: truck
         ? randomBetween(random, 5.2, 6.8)
         : randomBetween(random, 7.5, 10.2),
+      targetSpeed: 0,
       speed: 0
     };
     vehicle.speed = vehicle.baseSpeed;
+    vehicle.targetSpeed = vehicle.baseSpeed;
     vehicles.push(vehicle);
     return vehicle;
   }
@@ -307,7 +310,7 @@ export function createTraffic({ colliders = [], random = Math.random } = {}) {
         ? b.root.position.x - a.root.position.x
         : a.root.position.x - b.root.position.x);
 
-    for (const vehicle of laneVehicles) vehicle.speed = vehicle.baseSpeed;
+    for (const vehicle of laneVehicles) vehicle.targetSpeed = vehicle.baseSpeed;
 
     for (let index = 1; index < laneVehicles.length; index += 1) {
       const leader = laneVehicles[index - 1];
@@ -319,7 +322,7 @@ export function createTraffic({ colliders = [], random = Math.random } = {}) {
 
       if (gap < requiredGap + 5) {
         const safeSpeed = leader.speed + (gap - requiredGap) * 0.82;
-        follower.speed = Math.min(follower.baseSpeed, Math.max(1.8, safeSpeed));
+        follower.targetSpeed = Math.min(follower.targetSpeed, Math.max(1.8, safeSpeed));
       }
     }
   }
@@ -337,6 +340,19 @@ export function createTraffic({ colliders = [], random = Math.random } = {}) {
 
     for (let index = vehicles.length - 1; index >= 0; index -= 1) {
       const vehicle = vehicles[index];
+      let targetSpeed = vehicle.targetSpeed;
+      for (const crossing of crossingReservations) {
+        const distanceToStopLine =
+          (crossing.x - vehicle.root.position.x) * vehicle.lane.direction
+          - vehicle.length / 2 - 1.5;
+        if (distanceToStopLine >= 0 && distanceToStopLine < 24) {
+          const safeSpeed = Math.sqrt(2 * 4.8 * Math.max(0, distanceToStopLine - 1));
+          targetSpeed = Math.min(targetSpeed, safeSpeed);
+        }
+      }
+      const response = targetSpeed < vehicle.speed ? 10 : 2.4;
+      vehicle.speed += (targetSpeed - vehicle.speed) * (1 - Math.exp(-response * dt));
+      vehicle.speed = Math.max(0, vehicle.speed);
       vehicle.root.position.x += vehicle.lane.direction * vehicle.speed * dt;
       // Vehicle models face their local +X direction. The whole vehicle
       // is turned for the opposite lane, so local wheel spin stays positive.
@@ -358,8 +374,9 @@ export function createTraffic({ colliders = [], random = Math.random } = {}) {
     if (disposed) return;
     disposed = true;
     for (let index = vehicles.length - 1; index >= 0; index -= 1) removeVehicle(index);
+    crossingReservations.length = 0;
     group.clear();
   }
 
-  return { group, vehicles, lanes, update, dispose };
+  return { group, vehicles, lanes, crossingReservations, update, dispose };
 }

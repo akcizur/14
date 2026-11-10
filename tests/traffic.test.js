@@ -65,3 +65,21 @@ test("randomized traffic spawns new vehicles without leaving the road lane", () 
 
   traffic.dispose();
 });
+
+test("traffic slows down and yields before a reserved pedestrian crossing", () => {
+  const traffic = createTraffic({ random: () => 0.5 });
+  const approaching = traffic.vehicles.find(vehicle =>
+    vehicle.lane.direction === 1 && vehicle.root.position.x < 0
+  );
+  assert.ok(approaching);
+
+  traffic.crossingReservations.push({ x: 0 });
+  const startX = approaching.root.position.x;
+  for (let frame = 0; frame < 160; frame += 1) traffic.update(0.05, true);
+
+  assert.ok(approaching.root.position.x > startX);
+  assert.ok(approaching.root.position.x < -approaching.length / 2 + 1);
+  assert.ok(approaching.speed < approaching.baseSpeed);
+
+  traffic.dispose();
+});

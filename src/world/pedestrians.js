@@ -200,6 +200,7 @@ export function createPedestrians({
   const group = new THREE.Group();
   group.name = "street-pedestrians";
   const walkers = [];
+  const crossingReservations = traffic?.crossingReservations ?? [];
   const sitters = [];
   const benches = [];
   let disposed = false;
@@ -233,8 +234,7 @@ export function createPedestrians({
   }
 
   function startHouseEntry(agent, house) {
-    if (disposed || house.busy) {
-      house.busy = false;
+    if (disposed || house.reservedBy !== agent) {
       scheduleIdle(agent);
       return;
     }
@@ -260,6 +260,7 @@ export function createPedestrians({
       house.door.reset();
       house.interactable.enabled = true;
       house.busy = false;
+      house.reservedBy = null;
       agent.house = null;
       scheduleIdle(agent);
     });
@@ -285,6 +286,7 @@ export function createPedestrians({
         house.door.reset();
         house.interactable.enabled = true;
         house.busy = false;
+        house.reservedBy = null;
         agent.house = null;
         const sidewalkZ = house.sidewalkSide * SIDEWALK_WALK_Z;
         setPath(agent, [{ x: 0, z: sidewalkZ }], () => scheduleIdle(agent));
@@ -293,6 +295,7 @@ export function createPedestrians({
       house.door.reset();
       house.interactable.enabled = true;
       house.busy = false;
+      house.reservedBy = null;
       agent.house = null;
       scheduleIdle(agent);
     });
@@ -308,9 +311,10 @@ export function createPedestrians({
       const vehicleX = vehicle.root?.position?.x;
       if (!Number.isFinite(vehicleX)) continue;
       const distanceAhead = (x - vehicleX) * direction;
+      const speed = Math.max(1, vehicle.speed || vehicle.baseSpeed || 7);
+      const approachBuffer = Math.max(10, speed * 1.35 + vehicle.length / 2 + 2);
       const close = Math.abs(distanceAhead) <= vehicle.length / 2 + 2.5;
-      const timeToCross = distanceAhead / Math.max(1, vehicle.speed || vehicle.baseSpeed || 7);
-      if (close || (timeToCross >= 0 && timeToCross < crossingDuration + 1.5)) return false;
+      if (close || (distanceAhead >= 0 && distanceAhead < approachBuffer)) return false;
     }
 
     return true;
@@ -324,6 +328,8 @@ export function createPedestrians({
 
     if (roll < 0.15 && house && !house.busy) {
       house.busy = true;
+      house.reservedBy = agent;
+      agent.house = house;
       const sidewalkZ = agent.side * SIDEWALK_WALK_Z;
       const doorApproachZ = house.frontZ + house.frontSide * 0.95;
       setPath(agent, [
@@ -459,9 +465,15 @@ export function createPedestrians({
       } else if (agent.phase === "crossing-wait") {
         if (isCrossingSafe(agent.crossingX, agent.speed)) {
           const nextSide = -agent.side;
+          const reservation = { x: agent.crossingX, pedestrian: agent };
+          crossingReservations.push(reservation);
+          agent.crossingReservation = reservation;
           setPath(agent, [
             { x: agent.crossingX, z: nextSide * SIDEWALK_WALK_Z }
           ], () => {
+            const reservationIndex = crossingReservations.indexOf(reservation);
+            if (reservationIndex >= 0) crossingReservations.splice(reservationIndex, 1);
+            agent.crossingReservation = null;
             agent.side = nextSide;
             agent.crossingX = null;
             planWalk(agent);
@@ -484,10 +496,16 @@ export function createPedestrians({
     for (const agent of walkers) {
       const index = colliders.indexOf(agent.collider);
       if (index >= 0) colliders.splice(index, 1);
+      if (agent.crossingReservation) {
+        const reservationIndex = crossingReservations.indexOf(agent.crossingReservation);
+        if (reservationIndex >= 0) crossingReservations.splice(reservationIndex, 1);
+        agent.crossingReservation = null;
+      }
       if (agent.house) {
         agent.house.door.reset();
         agent.house.interactable.enabled = true;
         agent.house.busy = false;
+        agent.house.reservedBy = null;
       }
     }
     for (const bench of benches) {
