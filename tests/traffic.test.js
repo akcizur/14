@@ -34,10 +34,19 @@ test("vehicles travel in their lane direction and pause when the street is inact
 
   traffic.update(0.05, true);
   for (const snapshot of snapshots) {
-    const moved = snapshot.vehicle.root.position.x - snapshot.x;
-    assert.equal(Math.sign(moved), snapshot.vehicle.lane.direction);
+    const { vehicle } = snapshot;
+    const moved = vehicle.root.position.x - snapshot.x;
+    assert.equal(Math.sign(moved), vehicle.lane.direction);
     assert.ok(Math.abs(moved) > 0.1);
-    assert.ok(Math.abs(snapshot.vehicle.collider.minX - (snapshot.minX + moved)) < 1e-9);
+    assert.ok(Math.abs(vehicle.collider.minX - (snapshot.minX + moved)) < 1e-9);
+
+    assert.ok(vehicle.wheels.every(wheel => wheel.isGroup), "each wheel should have a shared axle pivot");
+    for (const wheel of vehicle.wheels) {
+      assert.ok(wheel.getObjectByName(vehicle.type === "car" ? "car-wheel-tire" : "truck-wheel-tire"));
+      assert.ok(wheel.getObjectByName(vehicle.type === "car" ? "car-wheel-hub" : "truck-wheel-hub"));
+      const expectedSpin = vehicle.speed * 0.05 / vehicle.wheelRadius;
+      assert.ok(Math.abs(wheel.rotation.z - expectedSpin) < 1e-9);
+    }
   }
 
   traffic.dispose();

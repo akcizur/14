@@ -37,18 +37,38 @@ function addPart(parent, geometry, material, name, x, y, z, castShadow = true) {
   return mesh;
 }
 
-function addWheel(parent, name, x, z, radius, width, material) {
-  const wheel = addPart(
-    parent,
-    new THREE.CylinderGeometry(radius, radius, width, 12),
-    material,
-    name,
-    x,
-    radius + 0.015,
-    z
-  );
-  wheel.rotation.x = Math.PI / 2;
+function addWheel(parent, name, x, z, radius, width, tireMaterial, hubMaterial) {
+  // The assembly sits at the axle centre. Its local Z axis is the axle axis;
+  // rotating this group therefore spins the tyre and hub together.
+  const wheel = new THREE.Group();
+  wheel.name = name + "-assembly";
+  wheel.position.set(x, radius + 0.015, z);
   wheel.userData.rollRadius = radius;
+
+  const tire = addPart(
+    wheel,
+    new THREE.CylinderGeometry(radius, radius, width, 12),
+    tireMaterial,
+    name + "-tire",
+    0,
+    0,
+    0
+  );
+  tire.rotation.x = Math.PI / 2;
+
+  const hub = addPart(
+    wheel,
+    new THREE.CylinderGeometry(radius * 0.44, radius * 0.44, width * 1.06, 12),
+    hubMaterial,
+    name + "-hub",
+    0,
+    0,
+    0,
+    false
+  );
+  hub.rotation.x = Math.PI / 2;
+
+  parent.add(wheel);
   return wheel;
 }
 
@@ -101,10 +121,7 @@ function createCarModel(color) {
   const wheels = [];
   for (const x of [-1.35, 1.35]) {
     for (const side of [-1, 1]) {
-      const wheel = addWheel(root, "car-wheel", x, side * 0.87, 0.36, 0.22, rubber);
-      const cap = addPart(root, new THREE.CylinderGeometry(0.16, 0.16, 0.232, 10), hub, "car-wheel-hub", x, 0.375, side * 0.87, false);
-      cap.rotation.x = Math.PI / 2;
-      wheels.push(wheel);
+      wheels.push(addWheel(root, "car-wheel", x, side * 0.87, 0.36, 0.22, rubber, hub));
     }
   }
 
@@ -146,10 +163,7 @@ function createTruckModel(color) {
   const wheels = [];
   for (const x of [-2.72, -0.86, 3.0]) {
     for (const side of [-1, 1]) {
-      const wheel = addWheel(root, "truck-wheel", x, side * 1.0, 0.4, 0.24, rubber);
-      const cap = addPart(root, new THREE.CylinderGeometry(0.18, 0.18, 0.25, 10), hub, "truck-wheel-hub", x, 0.415, side * 1.0, false);
-      cap.rotation.x = Math.PI / 2;
-      wheels.push(wheel);
+      wheels.push(addWheel(root, "truck-wheel", x, side * 1.0, 0.4, 0.24, rubber, hub));
     }
   }
 
@@ -324,8 +338,11 @@ export function createTraffic({ colliders = [], random = Math.random } = {}) {
     for (let index = vehicles.length - 1; index >= 0; index -= 1) {
       const vehicle = vehicles[index];
       vehicle.root.position.x += vehicle.lane.direction * vehicle.speed * dt;
+      // Vehicle models face their local +X direction. The whole vehicle
+      // is turned for the opposite lane, so local wheel spin stays positive.
+      // Spin the axle group (not the cylinder mesh's world Z Euler component).
       for (const wheel of vehicle.wheels) {
-        wheel.rotation.z += vehicle.lane.direction * vehicle.speed * dt / vehicle.wheelRadius;
+        wheel.rotation.z += vehicle.speed * dt / vehicle.wheelRadius;
       }
       updateCollider(vehicle);
 
