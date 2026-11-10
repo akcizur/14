@@ -14,6 +14,10 @@ const toast = document.getElementById("toast");
 const hint = document.getElementById("hint");
 const pauseScreen = document.getElementById("pauseScreen");
 const fadeElement = document.getElementById("sceneFade");
+const coarsePointer = window.matchMedia?.("(pointer: coarse)").matches ?? false;
+const defaultHint = coarsePointer
+  ? "JOYSTICK POHYB · TAŽENÍ POHLED · TLAČÍTKA AKCE"
+  : "WASD POHYB · SHIFT BĚH · SPACE SKOK · MYŠ POHLED · E INTERAKCE";
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xa8b8bf);
@@ -80,7 +84,7 @@ sceneManager = new SceneManager({
       houseB: "HOUSE B / INTERIOR"
     };
     locationLabel.textContent = labels[id] || id.toUpperCase();
-    hint.textContent = "WASD POHYB · SHIFT BĚH · E INTERAKCE · ESC PAUZA";
+    hint.textContent = defaultHint;
   }
 });
 sceneManager.register(exterior);
@@ -115,7 +119,7 @@ renderer.setAnimationLoop(time => {
     hint.classList.remove("is-interactive");
     if (state.transitioning) hint.textContent = "PŘECHOD...";
     else if (state.paused) hint.textContent = "PAUZA";
-    else hint.textContent = "WASD POHYB · SHIFT BĚH · SPACE SKOK · MYŠ POHLED · E INTERAKCE";
+    else hint.textContent = defaultHint;
   }
   renderer.render(scene, camera);
 });
