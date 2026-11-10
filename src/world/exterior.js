@@ -36,7 +36,21 @@ function buildHouse(group, colliders, config) {
   addBox(group, colliders, id + "-foundation", 0, -0.22, centerZ, width + 0.35, 0.22, depth + 0.35, foundation);
   addBox(group, colliders, id + "-left-wall", -halfW + 0.13, 0, centerZ, 0.26, wallHeight, depth, wall, true);
   addBox(group, colliders, id + "-right-wall", halfW - 0.13, 0, centerZ, 0.26, wallHeight, depth, wall, true);
-  addBox(group, colliders, id + "-rear-wall", 0, 0, rearZ, width, wallHeight, 0.26, wall, true);
+  const rearWindowWidth = 1.8, rearWindowHeight = 1.15, rearWindowY = 1.65;
+  addWallWithOpenings(group, colliders, id + "-rear-wall", {
+    minX: -halfW, maxX: halfW, z: rearZ,
+    thickness: 0.26, height: wallHeight, material: wall,
+    openings: [-3.5, 3.5].map(centerX => ({
+      minX: centerX - rearWindowWidth / 2,
+      maxX: centerX + rearWindowWidth / 2,
+      minY: rearWindowY - rearWindowHeight / 2,
+      maxY: rearWindowY + rearWindowHeight / 2
+    }))
+  });
+  const rearWindowZ = rearZ - frontSide * 0.135;
+  const rearWindowRotation = frontSide > 0 ? Math.PI : 0;
+  addWindow(group, -3.5, rearWindowY, rearWindowZ, rearWindowWidth, rearWindowHeight, rearWindowRotation);
+  addWindow(group, 3.5, rearWindowY, rearWindowZ, rearWindowWidth, rearWindowHeight, rearWindowRotation);
 
   const doorGap = 1.32;
   const windowWidth = 1.75, windowHeight = 1.15, windowY = 1.85;
