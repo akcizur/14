@@ -246,7 +246,7 @@ export function buildExterior({ onDoorInteract = () => {} } = {}) {
   const trunk = makeMaterial(0x665748);
   const foliage = makeMaterial(0x536b55);
   for (const [x, z] of [[-8.2, -17], [8.2, -17], [-8.2, 17], [8.2, 17]]) {
-    addBox(group, null, "garden-tree-trunk", x, 0, z, 0.34, 1.35, 0.34, trunk);
+    addBox(group, colliders, "garden-tree-trunk", x, 0, z, 0.34, 1.35, 0.34, trunk, true);
     const crown = new THREE.Mesh(new THREE.IcosahedronGeometry(1.25, 1), foliage);
     crown.position.set(x, 2.0, z);
     crown.scale.set(1, 1.08, 1);
