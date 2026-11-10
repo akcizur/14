@@ -205,8 +205,6 @@ function buildHouse(group, colliders, config) {
       id: "enter-" + id,
       x: 0, z: frontZ,
       range: 2.45,
-      requiresFacing: true,
-      facingThreshold: 0.18,
       prompt: "E  /  VSTOUPIT DO " + (id === "house-a" ? "DOMU A" : "DOMU B"),
       action: () => onDoorInteract(targetLocation, targetLocation, "entry")
     },
