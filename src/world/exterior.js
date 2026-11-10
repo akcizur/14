@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { addBox, addPlane, addWindow, makeMaterial } from "./geometry.js";
+import { addBox, addPlane, addWallWithOpenings, addWindow, makeMaterial } from "./geometry.js";
 import { createDoor } from "./interactions/door-transition.js";
 import { createDoorSpawns } from "../scenes/door-spawns.js";
 import { createGableRoofLayout } from "./roof-geometry.js";
@@ -39,9 +39,25 @@ function buildHouse(group, colliders, config) {
   addBox(group, colliders, id + "-rear-wall", 0, 0, rearZ, width, wallHeight, 0.26, wall, true);
 
   const doorGap = 1.32;
-  const sideWidth = (width - doorGap) / 2;
-  addBox(group, colliders, id + "-front-wall-left", -doorGap / 2 - sideWidth / 2, 0, frontZ, sideWidth, wallHeight, 0.26, wall, true);
-  addBox(group, colliders, id + "-front-wall-right", doorGap / 2 + sideWidth / 2, 0, frontZ, sideWidth, wallHeight, 0.26, wall, true);
+  const windowWidth = 1.75, windowHeight = 1.15, windowY = 1.85;
+  const windowHalfWidth = windowWidth / 2, windowHalfHeight = windowHeight / 2;
+  const windowOpening = centerX => ({
+    minX: centerX - windowHalfWidth,
+    maxX: centerX + windowHalfWidth,
+    minY: windowY - windowHalfHeight,
+    maxY: windowY + windowHalfHeight
+  });
+
+  addWallWithOpenings(group, colliders, id + "-front-wall-left", {
+    minX: -halfW, maxX: -doorGap / 2, z: frontZ,
+    thickness: 0.26, height: wallHeight, material: wall,
+    openings: [windowOpening(-3.55)]
+  });
+  addWallWithOpenings(group, colliders, id + "-front-wall-right", {
+    minX: doorGap / 2, maxX: halfW, z: frontZ,
+    thickness: 0.26, height: wallHeight, material: wall,
+    openings: [windowOpening(3.55)]
+  });
   addBox(group, null, id + "-front-lintel", 0, 2.22, frontZ, doorGap, 0.92, 0.26, wall);
 
   const roofLayout = createGableRoofLayout({
@@ -75,9 +91,9 @@ function buildHouse(group, colliders, config) {
   addBox(group, null, id + "-eaves-front", 0, 3.1, frontZ + frontSide * 0.1, width + 0.5, 0.12, 0.35, trim);
   addBox(group, null, id + "-eaves-rear", 0, 3.1, rearZ - frontSide * 0.1, width + 0.5, 0.12, 0.35, trim);
 
-  const windowZ = frontZ - frontSide * 0.035;
-  addWindow(group, -3.55, 1.85, windowZ, 1.75, 1.15, frontSide < 0 ? Math.PI : 0);
-  addWindow(group, 3.55, 1.85, windowZ, 1.75, 1.15, frontSide < 0 ? Math.PI : 0);
+  const windowZ = frontZ + frontSide * 0.135;
+  addWindow(group, -3.55, windowY, windowZ, windowWidth, windowHeight, frontSide < 0 ? Math.PI : 0);
+  addWindow(group, 3.55, windowY, windowZ, windowWidth, windowHeight, frontSide < 0 ? Math.PI : 0);
 
   const door = createDoor(group, colliders, {
     id: id + "-front-door", x: 0, z: frontZ,
