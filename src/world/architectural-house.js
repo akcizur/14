@@ -355,8 +355,8 @@ export function buildArchitecturalHouse({
   addBox(group, null, id + "-front-lintel", entry.x, entry.height, frontZ,
     entry.width, wallHeight - entry.height, wallThickness, wall);
 
-  const frontWindowZ = frontZ + frontSide * (wallThickness / 2 + 0.008);
-  const rearWindowZ = rearZ - frontSide * (wallThickness / 2 + 0.008);
+  const frontWindowZ = frontZ + frontSide * (wallThickness / 2 + 0.005);
+  const rearWindowZ = rearZ - frontSide * (wallThickness / 2 + 0.005);
   addWallWindows(group, id + "-front", frontWindows, frontWindowZ, frontSide, frontSide < 0 ? Math.PI : 0, trim);
   addWallWindows(group, id + "-rear", rearWindows, rearWindowZ, -frontSide, frontSide > 0 ? Math.PI : 0, trim);
 
