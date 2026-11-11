@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { WORLD_PLAN } from "./world-plan.js";
+import { makeSurfaceMaterial } from "./geometry.js";
 
 const DEFAULT_TRAFFIC_PLAN = WORLD_PLAN.street.traffic;
 const CAR_LENGTH = DEFAULT_TRAFFIC_PLAN.carLength;
@@ -77,14 +78,14 @@ function createCarModel(color) {
   root.name = "traffic-car";
   root.userData.trafficVehicle = "car";
 
-  const paint = createMaterial(color, { metalness: 0.16, roughness: 0.55 });
+  const paint = makeSurfaceMaterial("paint", color, { metalness: 0.2, roughness: 0.46, bumpScale: 0.002 }, [1.2, 1.2]);
   const darkPaint = createMaterial(0x333a3a, { roughness: 0.68 });
   const glass = createMaterial(0x35474b, {
     metalness: 0.12,
     roughness: 0.28,
     side: THREE.DoubleSide
   });
-  const rubber = createMaterial(0x202425, { roughness: 0.96 });
+  const rubber = makeSurfaceMaterial("rubber", 0x202425, { roughness: 0.97, bumpScale: 0.012 }, [1.6, 1]);
   const hub = createMaterial(0x909793, { metalness: 0.55, roughness: 0.48 });
   const headlamp = createMaterial(0xe7dfbd, {
     emissive: 0x8c8060,
@@ -133,8 +134,8 @@ function createTruckModel(color) {
   root.name = "traffic-truck";
   root.userData.trafficVehicle = "truck";
 
-  const paint = createMaterial(color, { roughness: 0.72 });
-  const cabPaint = createMaterial(0x777f7d, { metalness: 0.12, roughness: 0.63 });
+  const paint = makeSurfaceMaterial("paint", color, { roughness: 0.58, bumpScale: 0.002 }, [1.4, 1.2]);
+  const cabPaint = makeSurfaceMaterial("paint", 0x777f7d, { metalness: 0.16, roughness: 0.5, bumpScale: 0.002 }, [1.2, 1.2]);
   const glass = createMaterial(0x34464a, { roughness: 0.28 });
   const rubber = createMaterial(0x202425, { roughness: 0.96 });
   const hub = createMaterial(0x909793, { metalness: 0.5, roughness: 0.5 });
