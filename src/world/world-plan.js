@@ -21,7 +21,7 @@ export const WORLD_PLAN = freeze({
       { id: "south", centerX: 0, centerZ: 5.25, width: 64, depth: 1.7, y: 0.025, walkZ: 4.9, curbZ: 4.35, curbHeight: 0.16, curbDepth: 0.18 }
     ],
     crossings: {
-      centersX: [-24, -12, 12, 24],
+      centersX: [-24, 24],
       stripeCount: 9,
       stripeSpacing: 0.78,
       stripeWidth: 0.43,
@@ -40,7 +40,7 @@ export const WORLD_PLAN = freeze({
     pedestrians: {
       roadEdge: 32,
       walkZ: 4.9,
-      crosswalkXs: [-24, -12, 12, 24],
+      crosswalkXs: [-24, 24],
       initialWalkers: [
         { x: -26, side: -1 },
         { x: -16, side: 1 },
