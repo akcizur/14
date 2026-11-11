@@ -177,31 +177,35 @@ function buildHouse(group, colliders, config) {
 
   // Gutters and downpipes finish the roof edge and anchor its overhang visually.
   const gutterGeometry = new THREE.CylinderGeometry(0.055, 0.055, width + plan.roof.sideOverhang * 2, 8);
-  const pipeGeometry = new THREE.CylinderGeometry(0.045, 0.045, 2.88, 8);
-  const connectorGeometry = new THREE.CylinderGeometry(0.04, 0.04, 0.66, 8);
+  const pipeBottomY = 0.05;
+  const gutterY = eaveY - 0.27;
+  const pipeHeight = gutterY - pipeBottomY;
+  const pipeGeometry = new THREE.CylinderGeometry(0.045, 0.045, pipeHeight, 8);
   const pipeMaterial = makeMaterial(0x626966, { metalness: 0.22, roughness: 0.64 });
   for (const [facadeName, edgeZ, wallZ] of [
     ["front", frontZ + frontSide * plan.roof.overhang, frontZ + frontSide * (wallThickness / 2 + 0.03)],
     ["rear", rearZ - frontSide * plan.roof.overhang, rearZ - frontSide * (wallThickness / 2 + 0.03)]
   ]) {
+    const connectorLength = Math.abs(edgeZ - wallZ);
+    const connectorGeometry = new THREE.CylinderGeometry(0.04, 0.04, connectorLength, 8);
     const gutter = new THREE.Mesh(gutterGeometry, pipeMaterial);
     gutter.name = id + "-" + facadeName + "-gutter";
     gutter.rotation.z = Math.PI / 2;
-    gutter.position.set(0, eaveY - 0.27, edgeZ);
+    gutter.position.set(0, gutterY, edgeZ);
     gutter.castShadow = true;
     group.add(gutter);
 
     for (const pipeX of [-1, 1].map(side => side * (halfW - 0.35))) {
       const pipe = new THREE.Mesh(pipeGeometry, pipeMaterial);
       pipe.name = id + "-" + facadeName + "-downpipe-" + (pipeX < 0 ? "left" : "right");
-      pipe.position.set(pipeX, 1.44, wallZ);
+      pipe.position.set(pipeX, pipeBottomY + pipeHeight / 2, wallZ);
       pipe.castShadow = true;
       group.add(pipe);
 
       const connector = new THREE.Mesh(connectorGeometry, pipeMaterial);
       connector.name = id + "-" + facadeName + "-gutter-connector-" + (pipeX < 0 ? "left" : "right");
       connector.rotation.x = Math.PI / 2;
-      connector.position.set(pipeX, eaveY - 0.27, (edgeZ + wallZ) / 2);
+      connector.position.set(pipeX, gutterY, (edgeZ + wallZ) / 2);
       group.add(connector);
     }
   }
