@@ -49,6 +49,27 @@ test("each house interior has four windows, continuous baseboards and a ceiling 
   }
 });
 
+test("residential street dressing includes gardens, layered tree crowns, lamps and drains", () => {
+  const street = buildExterior();
+  const names = [];
+  street.group.traverse(object => names.push(object.name));
+
+  assert.ok(names.includes("house-a-front-fence-left-stone-plinth"));
+  assert.ok(names.includes("house-b-side-fence-right-upper-rail"));
+  assert.ok(names.includes("house-a-mailbox"));
+  assert.ok(names.includes("house-b-entrance-sconce"));
+  assert.ok(names.includes("garden-tree-foliage-0-0"));
+  assert.ok(names.includes("street-lamp-0"));
+  assert.ok(names.includes("street-manhole"));
+  assert.ok(names.includes("road-storm-drain-1-16"));
+  assert.equal(street.colliders.filter(item => item.name === "garden-tree-trunk").length, 4);
+  assert.ok(street.colliders.filter(item => item.name === "garden-fence").length >= 8);
+  assert.equal(street.colliders.filter(item => item.name === "street-lamp-post").length, 4);
+
+  street.pedestrians.dispose();
+  street.traffic.dispose();
+});
+
 test("street tree trunks block movement instead of acting as walk-through scenery", () => {
   const street = buildExterior();
   const treeColliders = street.colliders.filter(item => item.name === "garden-tree-trunk");
