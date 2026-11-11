@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { addBox, addWallWithOpenings, addWindow, makeMaterial } from "./geometry.js";
+import { addBox, addWallWithOpenings, addWindow, makeMaterial, makeSurfaceMaterial } from "./geometry.js";
 import { createDoor } from "./interactions/door-transition.js";
 import { createDoorSpawns } from "../scenes/door-spawns.js";
 import { getHousePlan } from "./house-plans.js";
@@ -23,9 +23,9 @@ export function buildEmptyInterior({
   const wallThickness = plan.wall.thickness;
   const frontZ = centerZ + frontSide * halfD;
   const rearZ = centerZ - frontSide * halfD;
-  const wall = makeMaterial(wallColor ?? plan.finish.wallColor);
-  const floor = makeMaterial(floorColor ?? plan.finish.floorColor, { roughness: 0.96 });
-  const ceiling = makeMaterial(plan.finish.ceilingColor);
+  const wall = makeSurfaceMaterial("plaster", wallColor ?? plan.finish.wallColor, { roughness: 0.95, bumpScale: 0.022 }, [3.1, 1.35]);
+  const floor = makeSurfaceMaterial("laminate", floorColor ?? plan.finish.floorColor, { roughness: 0.76, bumpScale: 0.014 }, [2.4, 1.8]);
+  const ceiling = makeSurfaceMaterial("plaster", plan.finish.ceilingColor, { roughness: 0.96, bumpScale: 0.012 }, [2.4, 2.4]);
 
   addBox(group, null, id + "-floor", 0, -0.18, centerZ, width, 0.18, depth, floor);
   addBox(group, null, id + "-ceiling", 0, wallHeight, centerZ, width, 0.16, depth, ceiling);
@@ -68,7 +68,7 @@ export function buildEmptyInterior({
   addBox(group, null, id + "-front-lintel", entry.x, entry.height, frontZ,
     entry.width, wallHeight - entry.height, wallThickness, wall);
 
-  const wallTrim = makeMaterial(plan.facade.trimColor, { roughness: 0.78 });
+  const wallTrim = makeSurfaceMaterial("wood", plan.facade.trimColor, { roughness: 0.84, bumpScale: 0.014 }, [2.2, 1]);
   const baseboardHeight = 0.16;
   addBox(group, null, id + "-baseboard-left", -halfW + 0.25, 0, centerZ,
     0.09, baseboardHeight, depth - 0.4, wallTrim);
@@ -141,7 +141,7 @@ export function buildEmptyInterior({
     action: () => onExit("street", "exit", streetSpawnKey)
   });
 
-  const fixtureBody = makeMaterial(0x77766f, { roughness: 0.72 });
+  const fixtureBody = makeSurfaceMaterial("metal", 0x77766f, { metalness: 0.24, roughness: 0.58, bumpScale: 0.006 }, [1, 1]);
   const fixtureGlow = makeMaterial(0xffe9c9, {
     emissive: 0xffd9a6,
     emissiveIntensity: 0.72,
