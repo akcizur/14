@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { addBox, makeMaterial } from "./geometry.js";
+import { addBox, makeMaterial, makeSurfaceMaterial } from "./geometry.js";
 
 function localToWorldZ(centerZ, frontSide, localZ) {
   return centerZ + frontSide * localZ;
@@ -124,14 +124,14 @@ function addFurnitureBox(group, name, x, y, z, width, height, depth, mat, rotati
 
 function makeRoomMaterials() {
   return {
-    wood: makeMaterial(0x756b5b, { roughness: 0.93 }),
-    darkWood: makeMaterial(0x494743, { roughness: 0.9 }),
-    upholstery: makeMaterial(0x737b76, { roughness: 0.96 }),
-    fabric: makeMaterial(0xb8b0a0, { roughness: 0.98 }),
-    metal: makeMaterial(0x5c6260, { metalness: 0.34, roughness: 0.58 }),
-    ceramic: makeMaterial(0xd4d3ca, { roughness: 0.36 }),
-    cabinet: makeMaterial(0xa39b89, { roughness: 0.88 }),
-    dark: makeMaterial(0x333a3a, { roughness: 0.8 }),
+    wood: makeSurfaceMaterial("wood", 0x756b5b, { roughness: 0.91, bumpScale: 0.022 }, [2.1, 1]),
+    darkWood: makeSurfaceMaterial("wood", 0x494743, { roughness: 0.88, bumpScale: 0.018 }, [2.1, 1]),
+    upholstery: makeSurfaceMaterial("fabric", 0x737b76, { roughness: 0.96, bumpScale: 0.01 }, [1.4, 1.4]),
+    fabric: makeSurfaceMaterial("fabric", 0xb8b0a0, { roughness: 0.98, bumpScale: 0.008 }, [1.5, 1.5]),
+    metal: makeSurfaceMaterial("metal", 0x5c6260, { metalness: 0.34, roughness: 0.58, bumpScale: 0.006 }, [1.2, 1.2]),
+    ceramic: makeSurfaceMaterial("ceramic", 0xd4d3ca, { roughness: 0.36, bumpScale: 0.012 }, [1.6, 1.6]),
+    cabinet: makeSurfaceMaterial("wood", 0xa39b89, { roughness: 0.88, bumpScale: 0.018 }, [2, 1]),
+    dark: makeSurfaceMaterial("paint", 0x333a3a, { roughness: 0.8, bumpScale: 0.003 }, [1, 1]),
     glass: makeMaterial(0x53696b, { roughness: 0.32, metalness: 0.12 })
   };
 }
