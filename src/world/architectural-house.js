@@ -382,7 +382,7 @@ export function buildArchitecturalHouse({
   addBox(group, null, id + "-rear-plinth", 0, 0, rearZ - frontSide * 0.04,
     width - 0.08, 0.42, 0.1, concrete);
   addBox(group, null, id + "-front-plinth-left", ( -halfW + entry.x - entry.width / 2) / 2, 0,
-    frontZ + frontSide * 0.04, Math.abs(-halfW + entry.x - entry.width / 2), 0.42, 0.1, concrete);
+    frontZ + frontSide * 0.04, (entry.x - entry.width / 2 + halfW), 0.42, 0.1, concrete);
   addBox(group, null, id + "-front-plinth-right", (halfW + entry.x + entry.width / 2) / 2, 0,
     frontZ + frontSide * 0.04, Math.abs(halfW - entry.x - entry.width / 2), 0.42, 0.1, concrete);
 
