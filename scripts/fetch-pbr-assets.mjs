@@ -14,7 +14,9 @@ const TEXTURES = [
   { kind: "concrete", id: "concrete_floor_01" },
   { kind: "roof-tile", id: "roof_tiles" },
   { kind: "wood", id: "wood_floor" },
-  { kind: "grass", id: "leafy_grass" }
+  { kind: "grass", id: "leafy_grass" },
+  { kind: "brick", id: "brick_wall_001" },
+  { kind: "ceramic", id: "interior_tiles" }
 ];
 
 async function requestJson(url) {
