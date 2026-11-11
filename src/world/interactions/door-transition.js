@@ -1,8 +1,8 @@
 import * as THREE from "three";
-import { addBox, makeMaterial } from "../geometry.js";
+import { addBox, makeMaterial, makeSurfaceMaterial } from "../geometry.js";
 
-const FRAME = makeMaterial(0xe1d9ca, { roughness: 0.82 });
-const HANDLE = makeMaterial(0xaaa18d, { metalness: 0.48, roughness: 0.35 });
+const FRAME = makeSurfaceMaterial("wood", 0xe1d9ca, { roughness: 0.84, bumpScale: 0.014 }, [1.6, 1.2]);
+const HANDLE = makeSurfaceMaterial("metal", 0xaaa18d, { metalness: 0.55, roughness: 0.34, bumpScale: 0.004 }, [1, 1]);
 
 export function createDoor(group, colliders, {
   id,
@@ -50,7 +50,7 @@ export function createDoor(group, colliders, {
   pivot.position.set(-leafCenterX, 0, frameDepthHalf * 0.32);
   assembly.add(pivot);
 
-  const leafMaterial = makeMaterial(color, { roughness: 0.86 });
+  const leafMaterial = makeSurfaceMaterial("wood", color, { roughness: 0.88, bumpScale: 0.022 }, [1.3, 1.1]);
   const leaf = new THREE.Mesh(new THREE.BoxGeometry(leafWidth, leafHeight, 0.13), leafMaterial);
   leaf.name = id + "-door-leaf";
   leaf.position.set(leafCenterX, leafHeight / 2 - 0.03, 0);
