@@ -125,7 +125,7 @@ function createCarModel(color) {
   addPart(root, new RoundedBoxGeometry(4.35, 0.56, 1.72, 4, 0.14), paint, "car-body", -0.05, 0.76, 0);
   addPart(root, new RoundedBoxGeometry(1.2, 0.34, 1.68, 4, 0.1), paint, "car-hood", 1.34, 0.91, 0);
   addPart(root, new RoundedBoxGeometry(0.9, 0.3, 1.66, 4, 0.09), paint, "car-rear-deck", -1.56, 0.91, 0);
-  addPart(root, new RoundedBoxGeometry(2.0, 0.16, 1.43, 4, 0.11), paint, "car-roof", -0.22, 1.62, 0);
+  addPart(root, new RoundedBoxGeometry(2.0, 0.16, 1.43, 4, 0.07), paint, "car-roof", -0.22, 1.62, 0);
 
   for (const side of [-1, 1]) {
     addPart(root, new THREE.BoxGeometry(1.53, 0.47, 0.035), glass, "car-side-window", -0.2, 1.34, side * 0.735, false);
