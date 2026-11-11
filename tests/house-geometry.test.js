@@ -58,7 +58,9 @@ test("residential street dressing includes gardens, layered tree crowns, lamps a
   assert.ok(names.includes("house-b-side-fence-right-upper-rail"));
   assert.ok(names.includes("house-a-mailbox"));
   assert.ok(names.includes("house-b-entrance-sconce"));
-  assert.ok(names.includes("garden-tree-foliage-0-0"));
+  assert.ok(names.includes("garden-tree-foliage-0"));
+  assert.ok(street.group.getObjectByName("garden-tree-foliage-0")?.isInstancedMesh);
+  assert.ok(street.group.getObjectByName("garden-tree-foliage-0")?.count >= 80);
   assert.ok(names.includes("street-lamp-0"));
   assert.ok(names.includes("street-manhole"));
   assert.ok(names.includes("road-storm-drain-1-16"));
