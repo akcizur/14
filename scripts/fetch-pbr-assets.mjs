@@ -120,7 +120,7 @@ async function fetchHdri() {
 
   return {
     id,
-    url: "/assets/lighting/" + id + "_1k.hdr",
+    url: "/assets/lighting/" + id + "_" + variant.name + ".hdr",
     resolution: variant.name,
     license: "CC0",
     author: "Greg Zaal; Jarod Guest",
