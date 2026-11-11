@@ -50,10 +50,10 @@ function chooseFormat(variant) {
 function mapNode(files, key) {
   const aliases = {
     diffuse: ["Diffuse", "diffuse", "diff"],
-    normal: ["nor_gl", "normal_gl"],
-    roughness: ["rough", "roughness"],
+    normal: ["nor_gl", "normal_gl", "Normal (GL)"],
+    roughness: ["rough", "Rough", "roughness", "Roughness"],
     ao: ["ao", "AO"],
-    height: ["disp", "displacement"]
+    height: ["disp", "displacement", "Displacement"]
   };
   for (const alias of aliases[key] || []) if (files?.[alias]) return files[alias];
   return null;
@@ -63,6 +63,7 @@ async function fetchTexture({ kind, id }) {
   console.log("  Poly Haven texture: " + id);
   const files = await requestJson("https://api.polyhaven.com/files/" + encodeURIComponent(id));
   const metadata = await requestJson("https://api.polyhaven.com/info/" + encodeURIComponent(id));
+  console.log("    Available maps: " + Object.keys(files).join(", "));
   const maps = {};
   const directory = path.join(PUBLIC, "pbr", kind);
 
