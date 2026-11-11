@@ -10,6 +10,7 @@ All assets below are provided by [Poly Haven](https://polyhaven.com) under the *
 | Concrete Floor 01 | Concrete details and foundations | Rob Tuytel | https://polyhaven.com/a/concrete_floor_01 |
 | Roof Tiles | Roof tile surface | Stephan Seeliger | https://polyhaven.com/a/roof_tiles |
 | Wood Floor | Interior wood surfaces | Dimitrios Savva | https://polyhaven.com/a/wood_floor |
+| Leafy Grass | Lawn ground surface | Charlotte Baglioni | https://polyhaven.com/a/leafy_grass |
 | Kloofendal 48d Partly Cloudy (Pure Sky) | HDRI sky, image-based lighting and reflections | Greg Zaal; Jarod Guest | https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky |
 
 ## Map usage
