@@ -151,7 +151,7 @@ export function createWorldLighting(scene, renderer = null) {
   if (renderer?.isWebGLRenderer) {
     pmremGenerator = new THREE.PMREMGenerator(renderer);
     pmremGenerator.compileEquirectangularShader();
-    hdriReady = fetch("/assets/pbr/manifest.json", { cache: "force-cache" })
+    hdriReady = fetch("assets/pbr/manifest.json", { cache: "force-cache" })
       .then(response => {
         if (!response.ok) throw new Error("PBR manifest unavailable: " + response.status);
         return response.json();
