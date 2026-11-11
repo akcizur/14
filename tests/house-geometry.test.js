@@ -217,3 +217,20 @@ test("roof drainage pipes terminate at the gutter and use exact connector spans"
     }
   }
 });
+
+
+test("playable rooms and exterior previews share ceramic floors and woven living rugs", () => {
+  for (const interior of [buildHouseA(), buildHouseB()]) {
+    assert.ok(interior.group.getObjectByName(interior.id + "-kitchen-floor-finish"));
+    assert.ok(interior.group.getObjectByName(interior.id + "-bathroom-floor-finish"));
+    assert.ok(interior.group.getObjectByName(interior.id + "-living-floor-rug"));
+  }
+
+  const street = buildExterior();
+  for (const id of ["house-a", "house-b"]) {
+    const preview = street.group.getObjectByName(id + "-window-preview");
+    assert.ok(preview.getObjectByName(id + "-kitchen-floor-finish"));
+    assert.ok(preview.getObjectByName(id + "-bathroom-floor-finish"));
+    assert.ok(preview.getObjectByName(id + "-living-floor-rug"));
+  }
+});
