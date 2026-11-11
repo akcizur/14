@@ -31,7 +31,7 @@ export function addPlanPartitions({
     throw new TypeError("addPlanPartitions requires a group, plan and valid orientation.");
   }
 
-  const trimMaterial = makeMaterial(plan.facade.trimColor, { roughness: 0.84 });
+  const trimMaterial = makeSurfaceMaterial("wood", plan.facade.trimColor, { roughness: 0.86, bumpScale: 0.014 }, [1.8, 1.2]);
   for (const partition of plan.partitions) {
     const start = partition.from;
     const end = partition.to;
