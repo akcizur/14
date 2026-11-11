@@ -8,7 +8,8 @@ import { buildHouseB } from "./interiors/house-b.js";
 import { SceneManager } from "./scenes/scene-manager.js";
 import { WORLD_PLAN } from "./world/world-plan.js";
 import { configureWorldRenderer, createWorldLighting } from "./world/lighting.js";
-import { disposeSurfaceTextures } from "./world/surface-materials.js";
+import { disposeSurfaceTextures, loadRealPbrMaterials } from "./world/surface-materials.js";
+import { createWorldPostProcessing } from "./world/postprocessing.js";
 
 const mount = document.getElementById("game");
 const coordinates = document.getElementById("coordinates");
@@ -39,7 +40,15 @@ renderer.domElement.setAttribute("aria-label", "První osoba — dva domy");
 renderer.domElement.tabIndex = 0;
 mount.appendChild(renderer.domElement);
 
-const worldLighting = createWorldLighting(scene);
+const worldLighting = createWorldLighting(scene, renderer);
+const postProcessing = createWorldPostProcessing(renderer, scene, camera);
+
+function prepareAmbientOcclusionUVs(root) {
+  root.traverse(object => {
+    if (!object.isMesh || !object.geometry?.attributes?.uv || object.geometry.attributes.uv2) return;
+    object.geometry.setAttribute("uv2", object.geometry.attributes.uv.clone());
+  });
+}
 
 const state = { started: false, paused: false, transitioning: false };
 let sceneManager;
@@ -57,6 +66,7 @@ function resize() {
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
   renderer.setSize(width, height, false);
+  postProcessing.setSize(width, height);
 }
 
 const controller = createPlayerController({ camera, state, ui: { showToast } });
@@ -66,6 +76,16 @@ const transitionTo = (target, sourceDoor, targetSpawn) =>
 const exterior = buildExterior({ onDoorInteract: transitionTo, generatedHouses: true });
 const houseA = buildHouseA({ onExit: transitionTo, seed: WORLD_PLAN.houses.find(site => site.planId === "houseA").seed });
 const houseB = buildHouseB({ onExit: transitionTo, seed: WORLD_PLAN.houses.find(site => site.planId === "houseB").seed });
+
+for (const root of [exterior.group, houseA.group, houseB.group]) prepareAmbientOcclusionUVs(root);
+void loadRealPbrMaterials().then(result => {
+  console.info("[PBR] Real Poly Haven materials loaded:", result.textures.join(", "));
+}).catch(error => {
+  console.warn("[PBR] Using procedural fallback materials:", error);
+});
+void worldLighting.hdriReady.then(loaded => {
+  console.info("[Lighting] " + (loaded ? "Poly Haven HDRI loaded." : "Procedural daylight fallback active."));
+});
 
 sceneManager = new SceneManager({
   root: scene,
@@ -130,7 +150,7 @@ renderer.setAnimationLoop(time => {
     else hint.textContent = defaultHint;
   }
 
-  renderer.render(scene, camera);
+  postProcessing.render(deltaTime);
 });
 
 window.addEventListener("beforeunload", () => {
@@ -141,6 +161,7 @@ window.addEventListener("beforeunload", () => {
   exterior.traffic.dispose();
   exterior.pedestrians.dispose();
   sceneManager.dispose();
+  postProcessing.dispose();
   worldLighting.dispose();
   disposeSurfaceTextures();
   renderer.dispose();
