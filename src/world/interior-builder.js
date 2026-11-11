@@ -157,6 +157,10 @@ export function buildEmptyInterior({
     lamp.position.set(room.x, wallHeight - 0.42, localZ);
     group.add(lamp);
   }
+  addBox(group, null, id + "-ceiling-light-body", 0, wallHeight - 0.12, centerZ,
+    0.92, 0.07, 0.52, fixtureBody);
+  addBox(group, null, id + "-ceiling-light-diffuser", 0, wallHeight - 0.18, centerZ,
+    0.76, 0.035, 0.36, fixtureGlow);
   const hallLamp = new THREE.PointLight(0xffe8c6, 3.2, 9, 2);
   hallLamp.position.set(0, wallHeight - 0.4, centerZ);
   group.add(hallLamp);
