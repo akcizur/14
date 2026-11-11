@@ -133,6 +133,14 @@ function surfaceProfile(kind, u, v, seed) {
       roughness = 0.38;
       break;
     }
+    case "rubber": {
+      const tread = Math.sin(v * 78 * Math.PI) * 0.05;
+      const fineGrain = Math.sin(u * 210 * Math.PI + noise * 4) * 0.018;
+      grain = tread + fineGrain + (noise - 0.5) * 0.05;
+      relief = 0.48 + tread * 1.5 + noise * 0.08;
+      roughness = 0.96;
+      break;
+    }
     case "brick": {
       const row = Math.floor(v * 9);
       const localU = (u * 5 + (row % 2) * 0.5) % 1;
