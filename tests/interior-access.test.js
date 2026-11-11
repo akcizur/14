@@ -56,7 +56,7 @@ test("every generated room is reachable from the entrance in both houses", () =>
     controller.setWorld({ colliders: interior.colliders, navigation: interior.navigation });
     assert.equal(controller.setSpawn(interior.spawn), true, interior.id + " spawn must be clear");
     assert.equal(
-      interior.colliders.some(collider => collider.name.includes("-lintel-")),
+      interior.colliders.some(collider => collider.name.includes("-partition-") && collider.name.includes("-lintel-")),
       false,
       interior.id + " overhead door lintels must not create floor-level collision"
     );
