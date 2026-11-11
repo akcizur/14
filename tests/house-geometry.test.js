@@ -34,7 +34,7 @@ test("the replacement bungalow has a four-plane hip roof, raised clerestory and 
     assert.ok(street.group.getObjectByName(id + "-upper-roof-ridge-cap"));
     assert.ok(street.group.getObjectByName(id + "-carport-roof"));
     assert.equal(
-      street.group.children.filter(child => child.name.startsWith(id + "-carport-post-")).length,
+      street.group.children.filter(child => child.name.startsWith(id + "-carport-post-") && !child.name.includes("-base-")).length,
       4
     );
     assert.ok(street.group.getObjectByName(id + "-porch-canopy"));
