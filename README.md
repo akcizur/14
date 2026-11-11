@@ -1,6 +1,6 @@
 # 14 — Procedural residential world
 
-A low-poly first-person Three.js environment with two playable houses, a residential street, traffic and pedestrians.
+A first-person Three.js residential environment with two playable houses, a detailed street, traffic and pedestrians.
 
 ## Unified world model
 
@@ -24,6 +24,14 @@ Every generated plan is validated before geometry is created. Validation checks 
 The building plan drives the exterior walls, real wall openings, frames, roof, eaves, gutters, entrance, interior partitions, window preview, room furnishings, door spawns and navigation bounds.
 
 Large furniture pieces create matching player collision volumes. Window previews are visual-only and never add collision. Door dimensions and spawn distances come from the same entrance definition.
+
+## Residential street detailing
+
+`src/world/streetscape.js` adds the street-level elements that connect the houses to a believable residential setting: metal and timber front fences, masonry plinths, gates, mailboxes, planted hedges, entrance sconces, street lamps, manhole covers and storm drains. Tree crowns use layered instanced leaf clusters, varied foliage tones and visible branch structure.
+
+The surface material system provides tiling albedo, roughness, height and tangent-space normal maps. The environment uses a higher-resolution daylight sky with soft cloud formations, balanced hemisphere fill and directional sunlight. Vehicle bodies use rounded forms and more complete trim; pedestrian limbs and torsos use curved geometry.
+
+The street layout uses fewer, more plausible pedestrian crossings while keeping vehicle and pedestrian routes linked to the same world plan.
 
 ## Runtime systems
 
