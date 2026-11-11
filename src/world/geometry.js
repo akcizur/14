@@ -1,3 +1,5 @@
+export { makeSurfaceMaterial } from "./surface-materials.js";
+
 import * as THREE from "three";
 
 export function makeMaterial(color, options = {}) {
