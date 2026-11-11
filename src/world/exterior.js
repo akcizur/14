@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { addBox, addPlane, addWallWithOpenings, addWindow, makeMaterial } from "./geometry.js";
+import { addBox, addPlane, addWallWithOpenings, addWindow, makeMaterial, makeSurfaceMaterial } from "./geometry.js";
 import { createDoor } from "./interactions/door-transition.js";
 import { createDoorSpawns } from "../scenes/door-spawns.js";
 import { createGableRoofLayout } from "./roof-geometry.js";
@@ -42,11 +42,11 @@ function buildHouse(group, colliders, config) {
   const facadeColor = plan.facade.wallColor;
   const roofFinish = plan.roof.color;
   const trimColor = plan.facade.trimColor;
-  const wall = makeMaterial(facadeColor);
-  const roof = makeMaterial(roofFinish, { roughness: 0.98 });
-  const gableWall = makeMaterial(facadeColor, { side: THREE.DoubleSide });
-  const trim = makeMaterial(trimColor);
-  const foundation = makeMaterial(0x777b75);
+  const wall = makeSurfaceMaterial("plaster", facadeColor, { roughness: 0.94, bumpScale: 0.022 }, [3.2, 1.25]);
+  const roof = makeSurfaceMaterial("roof-tile", roofFinish, { roughness: 0.91, bumpScale: 0.06 }, [2.3, 3.4]);
+  const gableWall = makeSurfaceMaterial("plaster", facadeColor, { side: THREE.DoubleSide, roughness: 0.94, bumpScale: 0.022 }, [3.2, 1.25]);
+  const trim = makeSurfaceMaterial("wood", trimColor, { roughness: 0.84, bumpScale: 0.018 }, [1.8, 1.2]);
+  const foundation = makeSurfaceMaterial("concrete", 0x777b75, { roughness: 0.96, bumpScale: 0.055 }, [2.8, 2.8]);
 
   addBox(group, colliders, id + "-foundation", 0, -0.22, centerZ, width + 0.35, 0.22, depth + 0.35, foundation);
   addBox(group, colliders, id + "-left-wall", -halfW + wallThickness / 2, 0, centerZ, wallThickness, wallHeight, depth, wall, true);
@@ -181,7 +181,7 @@ function buildHouse(group, colliders, config) {
   const gutterY = eaveY - 0.27;
   const pipeHeight = gutterY - pipeBottomY;
   const pipeGeometry = new THREE.CylinderGeometry(0.045, 0.045, pipeHeight, 8);
-  const pipeMaterial = makeMaterial(0x626966, { metalness: 0.22, roughness: 0.64 });
+  const pipeMaterial = makeSurfaceMaterial("metal", 0x626966, { metalness: 0.34, roughness: 0.56, bumpScale: 0.006 }, [1.2, 2.5]);
   for (const [facadeName, edgeZ, wallZ] of [
     ["front", frontZ + frontSide * plan.roof.overhang, frontZ + frontSide * (wallThickness / 2 + 0.03)],
     ["rear", rearZ - frontSide * plan.roof.overhang, rearZ - frontSide * (wallThickness / 2 + 0.03)]
@@ -223,7 +223,7 @@ function buildHouse(group, colliders, config) {
   if (plan.details.porch) {
     const porch = plan.details.porch;
     const porchZ = frontZ + frontSide * (entry.path.setback - 1.78);
-    const porchMetal = makeMaterial(0x565b58, { roughness: 0.82 });
+    const porchMetal = makeSurfaceMaterial("metal", 0x565b58, { metalness: 0.25, roughness: 0.7, bumpScale: 0.008 }, [1, 3]);
     addBox(group, null, id + "-porch-canopy", entry.x, porch.height - 0.16, porchZ,
       porch.width, 0.16, porch.depth, roof);
     addBox(group, null, id + "-porch-beam", entry.x, porch.height - 0.23,
@@ -245,7 +245,7 @@ function buildHouse(group, colliders, config) {
     const chimneyPlan = plan.details.chimneyPlacement;
     const chimneyZ = centerZ + frontSide * chimneyPlan.localZ;
     const roofBaseY = wallHeight + Math.tan(plan.roof.pitch) * (halfD - Math.abs(chimneyPlan.localZ));
-    const chimney = makeMaterial(0x77736b, { roughness: 0.96 });
+    const chimney = makeSurfaceMaterial("brick", 0x77736b, { roughness: 0.96, bumpScale: 0.065 }, [1.8, 2.4]);
     addBox(group, null, id + "-chimney", chimneyPlan.x, roofBaseY, chimneyZ,
       chimneyPlan.width, chimneyPlan.height, chimneyPlan.width, chimney);
     addBox(group, null, id + "-chimney-cap", chimneyPlan.x, roofBaseY + chimneyPlan.height,
@@ -268,8 +268,8 @@ function buildHouse(group, colliders, config) {
     insideDistance: entry.spawn.insideDistance
   });
 
-  const pathMat = makeMaterial(0xaaa79c);
-  const lawnMat = makeMaterial(0x77836f);
+  const pathMat = makeSurfaceMaterial("paving", 0xaaa79c, { roughness: 0.9, bumpScale: 0.025 }, [1.3, 4.5]);
+  const lawnMat = makeSurfaceMaterial("grass", 0x77836f, { roughness: 1, bumpScale: 0.018 }, [4.8, 3.6]);
   addPlane(group, id + "-front-lawn", entry.x, frontZ + frontSide * entry.path.setback,
     entry.path.lawnWidth, entry.path.lawnDepth, lawnMat, -0.035);
   addPlane(group, id + "-entry-path", entry.x, frontZ + frontSide * entry.path.setback,
@@ -304,10 +304,10 @@ export function buildExterior({
   const group = new THREE.Group();
   group.name = "scene-street";
   const colliders = [], interactables = [];
-  const grass = makeMaterial(0x77816f);
-  const road = makeMaterial(0x3d4445, { roughness: 1 });
-  const sidewalk = makeMaterial(0xa5a297);
-  const curb = makeMaterial(0xc8c3b7);
+  const grass = makeSurfaceMaterial("grass", 0x77816f, { roughness: 1, bumpScale: 0.018 }, [12, 9]);
+  const road = makeSurfaceMaterial("asphalt", 0x3d4445, { roughness: 1, bumpScale: 0.035 }, [16, 2.8]);
+  const sidewalk = makeSurfaceMaterial("paving", 0xa5a297, { roughness: 0.92, bumpScale: 0.022 }, [12, 2.2]);
+  const curb = makeSurfaceMaterial("concrete", 0xc8c3b7, { roughness: 0.95, bumpScale: 0.035 }, [10, 1.2]);
   const markings = makeMaterial(0xd0cfc2);
 
   const ground = streetPlan.ground;
