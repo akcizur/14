@@ -178,6 +178,7 @@ function createMaps(kind, seed) {
   const colorData = new Uint8Array(SIZE * SIZE * 4);
   const roughnessData = new Uint8Array(SIZE * SIZE * 4);
   const heightData = new Uint8Array(SIZE * SIZE * 4);
+  const normalData = new Uint8Array(SIZE * SIZE * 4);
 
   for (let y = 0; y < SIZE; y += 1) {
     for (let x = 0; x < SIZE; x += 1) {
@@ -194,10 +195,37 @@ function createMaps(kind, seed) {
     }
   }
 
+  // Derive a tangent-space normal map from the same height field. Sampling
+  // wraps at the edges so the texture remains seamless when tiled.
+  for (let y = 0; y < SIZE; y += 1) {
+    const upY = (y - 1 + SIZE) % SIZE;
+    const downY = (y + 1) % SIZE;
+    for (let x = 0; x < SIZE; x += 1) {
+      const leftX = (x - 1 + SIZE) % SIZE;
+      const rightX = (x + 1) % SIZE;
+      const sample = (sx, sy) => heightData[(sy * SIZE + sx) * 4] / 255;
+      const dx = (sample(rightX, y) - sample(leftX, y)) * 1.65;
+      const dy = (sample(x, downY) - sample(x, upY)) * 1.65;
+      let nx = -dx;
+      let ny = -dy;
+      let nz = 1;
+      const inverseLength = 1 / Math.hypot(nx, ny, nz);
+      nx *= inverseLength;
+      ny *= inverseLength;
+      nz *= inverseLength;
+      const index = (y * SIZE + x) * 4;
+      normalData[index] = Math.round((nx * 0.5 + 0.5) * 255);
+      normalData[index + 1] = Math.round((ny * 0.5 + 0.5) * 255);
+      normalData[index + 2] = Math.round((nz * 0.5 + 0.5) * 255);
+      normalData[index + 3] = 255;
+    }
+  }
+
   return {
     map: createDataTexture(colorData, kind, "color"),
     roughnessMap: createDataTexture(roughnessData, kind, "roughness"),
-    bumpMap: createDataTexture(heightData, kind, "height")
+    bumpMap: createDataTexture(heightData, kind, "height"),
+    normalMap: createDataTexture(normalData, kind, "normal")
   };
 }
 
@@ -243,6 +271,8 @@ export function makeSurfaceMaterial(kind, color = 0xffffff, options = {}, repeat
     map: maps.map,
     roughnessMap: maps.roughnessMap,
     bumpMap: maps.bumpMap,
+    normalMap: maps.normalMap,
+    normalScale: new THREE.Vector2(0.58, 0.58),
     bumpScale,
     roughness: 0.88,
     ...materialOptions
