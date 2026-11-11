@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { RGBELoader } from "three/addons/loaders/RGBELoader.js";
 
 function mix(a, b, amount) {
   return a + (b - a) * amount;
@@ -100,28 +101,35 @@ export function configureWorldRenderer(renderer, pixelRatio = 1) {
 
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.04;
+  renderer.toneMappingExposure = 1.06;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.setPixelRatio(Math.max(1, Math.min(Number(pixelRatio) || 1, 1.75)));
   return renderer;
 }
 
-export function createWorldLighting(scene) {
+export function createWorldLighting(scene, renderer = null) {
   if (!scene?.add) throw new TypeError("createWorldLighting requires a Three.js scene.");
 
   const previousBackground = scene.background;
-  const environment = createWorldEnvironment();
-  scene.environment = environment;
-  scene.background = environment;
-  scene.backgroundBlurriness = 0.015;
-  scene.environmentIntensity = 0.38;
+  const previousEnvironment = scene.environment;
+  const previousEnvironmentIntensity = scene.environmentIntensity;
+  const previousBackgroundBlurriness = scene.backgroundBlurriness;
+  let fallbackEnvironment = createWorldEnvironment();
+  let hdriTexture = null;
+  let environmentTarget = null;
+  let pmremGenerator = null;
 
-  const ambient = new THREE.HemisphereLight(0xe8edf0, 0x666256, 0.98);
-  ambient.name = "world-soft-sky-fill";
+  scene.environment = fallbackEnvironment;
+  scene.background = fallbackEnvironment;
+  scene.backgroundBlurriness = 0;
+  scene.environmentIntensity = 0.24;
+
+  const ambient = new THREE.HemisphereLight(0xdce8ee, 0x605b4d, 0.78);
+  ambient.name = "world-natural-sky-fill";
   scene.add(ambient);
 
-  const sun = new THREE.DirectionalLight(0xfff0d9, 2.25);
+  const sun = new THREE.DirectionalLight(0xfff0dc, 1.85);
   sun.name = "world-sunlight";
   sun.position.set(-24, 38, 20);
   sun.castShadow = true;
@@ -132,22 +140,55 @@ export function createWorldLighting(scene) {
   sun.shadow.camera.bottom = -39;
   sun.shadow.camera.near = 1;
   sun.shadow.camera.far = 100;
-  sun.shadow.bias = -0.00016;
-  sun.shadow.normalBias = 0.024;
-  sun.shadow.radius = 3;
+  sun.shadow.bias = -0.00012;
+  sun.shadow.normalBias = 0.022;
+  sun.shadow.radius = 4;
   sun.target.position.set(0, 0, 0);
   scene.add(sun, sun.target);
 
+  let hdriReady = Promise.resolve(false);
+  if (renderer?.isWebGLRenderer) {
+    pmremGenerator = new THREE.PMREMGenerator(renderer);
+    pmremGenerator.compileEquirectangularShader();
+    hdriReady = new RGBELoader()
+      .loadAsync("/assets/lighting/kloofendal_48d_partly_cloudy_puresky_2k.hdr")
+      .then(texture => {
+        hdriTexture = texture;
+        hdriTexture.mapping = THREE.EquirectangularReflectionMapping;
+        environmentTarget = pmremGenerator.fromEquirectangular(hdriTexture);
+        scene.background = hdriTexture;
+        scene.environment = environmentTarget.texture;
+        scene.backgroundBlurriness = 0;
+        scene.environmentIntensity = 0.72;
+        fallbackEnvironment?.dispose();
+        fallbackEnvironment = null;
+        pmremGenerator.dispose();
+        pmremGenerator = null;
+        return true;
+      })
+      .catch(error => {
+        console.warn("[Lighting] HDRI unavailable; using the procedural daylight fallback.", error);
+        pmremGenerator?.dispose();
+        pmremGenerator = null;
+        return false;
+      });
+  }
+
   return {
-    environment,
+    get environment() { return environmentTarget?.texture ?? fallbackEnvironment; },
     ambient,
     sun,
+    hdriReady,
     dispose() {
       scene.remove(ambient, sun, sun.target);
-      scene.environment = null;
-      scene.background = previousBackground;
-      scene.backgroundBlurriness = 0;
-      environment.dispose();
+      scene.environment = previousEnvironment ?? null;
+      scene.background = previousBackground ?? null;
+      scene.environmentIntensity = previousEnvironmentIntensity;
+      scene.backgroundBlurriness = previousBackgroundBlurriness ?? 0;
+      environmentTarget?.dispose();
+      hdriTexture?.dispose();
+      fallbackEnvironment?.dispose();
+      pmremGenerator?.dispose();
     }
   };
 }
