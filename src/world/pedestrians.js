@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { WORLD_PLAN } from "./world-plan.js";
+import { makeSurfaceMaterial } from "./geometry.js";
 
 const DEFAULT_PEDESTRIAN_PLAN = WORLD_PLAN.street.pedestrians;
 const SHIRTS = [0x687b78, 0x9a806e, 0x68718b, 0xb4a68f, 0x566b61, 0x8c6460, 0x858a87];
@@ -49,11 +50,11 @@ function addCylinder(parent, name, mat, radiusTop, radiusBottom, height, x, y, z
 
 function createPersonMaterials(random) {
   return {
-    shirt: material(choose(random, SHIRTS), 0.92),
-    trousers: material(choose(random, TROUSERS), 0.95),
+    shirt: makeSurfaceMaterial("fabric", choose(random, SHIRTS), { roughness: 0.96, bumpScale: 0.008 }, [1.2, 1.2]),
+    trousers: makeSurfaceMaterial("fabric", choose(random, TROUSERS), { roughness: 0.97, bumpScale: 0.008 }, [1.2, 1.2]),
     skin: material(choose(random, SKIN), 0.9),
     hair: material(choose(random, HAIR), 0.98),
-    shoes: material(0x292d2d, 0.96),
+    shoes: makeSurfaceMaterial("rubber", 0x292d2d, { roughness: 0.97, bumpScale: 0.008 }, [1, 1]),
     detail: material(0x414745, 0.8)
   };
 }
@@ -151,9 +152,9 @@ function createBench(group, colliders, x, z, facingZ) {
   bench.rotation.y = facingZ > 0 ? 0 : Math.PI;
   group.add(bench);
 
-  const wood = material(0x746c5d, 0.95);
-  const darkWood = material(0x4d504b, 0.92);
-  const metal = material(0x464d4b, 0.78);
+  const wood = makeSurfaceMaterial("wood", 0x746c5d, { roughness: 0.95, bumpScale: 0.018 }, [2.4, 1]);
+  const darkWood = makeSurfaceMaterial("wood", 0x4d504b, { roughness: 0.93, bumpScale: 0.015 }, [2.4, 1]);
+  const metal = makeSurfaceMaterial("metal", 0x464d4b, { metalness: 0.3, roughness: 0.72, bumpScale: 0.006 }, [1, 1.5]);
 
   addMesh(bench, new THREE.BoxGeometry(2.0, 0.13, 0.57), wood, "bench-seat", 0, 0.55, 0);
   addMesh(bench, new THREE.BoxGeometry(2.0, 0.48, 0.11), wood, "bench-backrest", 0, 0.91, -0.24);
