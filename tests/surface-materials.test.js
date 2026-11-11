@@ -9,6 +9,7 @@ test("PBR surfaces provide sRGB color, linear roughness and bump maps", () => {
   assert.equal(maps.map.colorSpace, THREE.SRGBColorSpace);
   assert.equal(maps.roughnessMap.colorSpace, THREE.NoColorSpace);
   assert.equal(maps.bumpMap.colorSpace, THREE.NoColorSpace);
+  assert.equal(maps.normalMap.colorSpace, THREE.NoColorSpace);
   assert.equal(maps.map.image.width, 256);
   assert.equal(maps.map.image.height, 256);
   assert.equal(maps.map.repeat.x, 3);
@@ -45,6 +46,7 @@ test("textured materials retain physically based material controls", () => {
   assert.ok(material.map);
   assert.ok(material.roughnessMap);
   assert.ok(material.bumpMap);
+  assert.ok(material.normalMap);
   assert.equal(material.roughness, 0.91);
   assert.equal(material.bumpScale, 0.06);
   assert.equal(material.metalness, 0.04);
