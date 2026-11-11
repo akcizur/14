@@ -236,10 +236,10 @@ test("playable rooms and exterior previews share ceramic floors and woven living
   }
 
   const street = buildExterior();
-  for (const id of ["house-a", "house-b"]) {
-    const preview = street.group.getObjectByName(id + "-window-preview");
-    assert.ok(preview.getObjectByName(id + "-kitchen-floor-finish"));
-    assert.ok(preview.getObjectByName(id + "-bathroom-floor-finish"));
-    assert.ok(preview.getObjectByName(id + "-living-floor-rug"));
+  for (const [siteId, planId] of [["house-a", "houseA"], ["house-b", "houseB"]]) {
+    const preview = street.group.getObjectByName(siteId + "-window-preview");
+    assert.ok(preview.getObjectByName(planId + "-kitchen-floor-finish"));
+    assert.ok(preview.getObjectByName(planId + "-bathroom-floor-finish"));
+    assert.ok(preview.getObjectByName(planId + "-living-floor-rug"));
   }
 });
