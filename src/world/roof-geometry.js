@@ -2,8 +2,8 @@ export const DEFAULT_ROOF_PITCH = 0.34;
 
 /**
  * Returns a symmetric gable-roof layout for a house whose ridge runs along X
- * and whose roof slopes across Z. The layout is independent of which facade
- * is used as the entrance, so both houses use the same correct roof profile.
+ * and whose roof slopes across Z. The panel depth is measured along the roof
+ * plane; its horizontal projection includes the eave overhang exactly.
  */
 export function createGableRoofLayout({
   centerZ,
@@ -19,8 +19,9 @@ export function createGableRoofLayout({
     throw new RangeError("Invalid gable roof dimensions or pitch.");
   }
 
-  const panelDepth = halfDepth + panelOverhang;
-  const panelOffset = panelDepth / 2;
+  const cosPitch = Math.cos(pitch);
+  const panelOffset = (halfDepth + panelOverhang) / 2;
+  const panelLength = (halfDepth + panelOverhang) / cosPitch;
   const panelCenterY = wallHeight + Math.tan(pitch) * (halfDepth - panelOffset);
   const ridgeY = wallHeight + Math.tan(pitch) * halfDepth;
 
@@ -34,14 +35,14 @@ export function createGableRoofLayout({
         centerZ: centerZ - panelOffset,
         centerY: panelCenterY,
         rotationX: -pitch,
-        depth: panelDepth
+        depth: panelLength
       },
       {
         side: 1,
         centerZ: centerZ + panelOffset,
         centerY: panelCenterY,
         rotationX: pitch,
-        depth: panelDepth
+        depth: panelLength
       }
     ]
   };
