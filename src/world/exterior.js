@@ -6,6 +6,7 @@ import { createGableRoofLayout } from "./roof-geometry.js";
 import { buildWindowInteriorPreview } from "./interior-preview.js";
 import { createTraffic } from "./traffic.js";
 import { createPedestrians } from "./pedestrians.js";
+import { getHousePlan } from "./house-plans.js";
 
 function addGableEnd(group, name, x, frontZ, rearZ, centerZ, wallHeight, ridgeY, material) {
   const geometry = new THREE.BufferGeometry();
@@ -26,65 +27,74 @@ function addGableEnd(group, name, x, frontZ, rearZ, centerZ, wallHeight, ridgeY,
 
 function buildHouse(group, colliders, config) {
   const {
-    id, centerZ, frontSide, wallColor, roofColor, doorColor,
+    id, planId, centerZ, frontSide, wallColor, roofColor, doorColor,
     interiorWallColor, interiorFloorColor,
     targetLocation, streetSpawnKey, onDoorInteract
   } = config;
-  const width = 12, depth = 10, wallHeight = 3.15;
+  const plan = getHousePlan(planId);
+  const { width, depth } = plan.footprint;
+  const wallHeight = plan.wall.height;
+  const wallThickness = plan.wall.thickness;
   const halfW = width / 2, halfD = depth / 2;
   const frontZ = centerZ + frontSide * halfD;
   const rearZ = centerZ - frontSide * halfD;
-  const wall = makeMaterial(wallColor);
-  const roof = makeMaterial(roofColor, { roughness: 0.98 });
-  const gableWall = makeMaterial(wallColor, { side: THREE.DoubleSide });
-  const trim = makeMaterial(0xe0dacc);
+  const facadeColor = wallColor ?? plan.facade.wallColor;
+  const roofFinish = roofColor ?? plan.roof.color;
+  const trimColor = plan.facade.trimColor;
+  const wall = makeMaterial(facadeColor);
+  const roof = makeMaterial(roofFinish, { roughness: 0.98 });
+  const gableWall = makeMaterial(facadeColor, { side: THREE.DoubleSide });
+  const trim = makeMaterial(trimColor);
   const foundation = makeMaterial(0x777b75);
 
   addBox(group, colliders, id + "-foundation", 0, -0.22, centerZ, width + 0.35, 0.22, depth + 0.35, foundation);
-  addBox(group, colliders, id + "-left-wall", -halfW + 0.13, 0, centerZ, 0.26, wallHeight, depth, wall, true);
-  addBox(group, colliders, id + "-right-wall", halfW - 0.13, 0, centerZ, 0.26, wallHeight, depth, wall, true);
-  const rearWindowWidth = 1.8, rearWindowHeight = 1.15, rearWindowY = 1.65;
+  addBox(group, colliders, id + "-left-wall", -halfW + wallThickness / 2, 0, centerZ, wallThickness, wallHeight, depth, wall, true);
+  addBox(group, colliders, id + "-right-wall", halfW - wallThickness / 2, 0, centerZ, wallThickness, wallHeight, depth, wall, true);
+  const rearWindows = plan.facade.windows.filter(item => item.side === "rear");
+  const rearWindowWidth = rearWindows[0]?.width ?? 1.8;
+  const rearWindowHeight = rearWindows[0]?.height ?? 1.15;
+  const rearWindowY = rearWindows[0]?.y ?? 1.65;
   addWallWithOpenings(group, colliders, id + "-rear-wall", {
     minX: -halfW, maxX: halfW, z: rearZ,
-    thickness: 0.26, height: wallHeight, material: wall,
-    openings: [-3.5, 3.5].map(centerX => ({
-      minX: centerX - rearWindowWidth / 2,
-      maxX: centerX + rearWindowWidth / 2,
-      minY: rearWindowY - rearWindowHeight / 2,
-      maxY: rearWindowY + rearWindowHeight / 2
+    thickness: wallThickness, height: wallHeight, material: wall,
+    openings: rearWindows.map(item => ({
+      minX: item.x - item.width / 2,
+      maxX: item.x + item.width / 2,
+      minY: item.y - item.height / 2,
+      maxY: item.y + item.height / 2
     }))
   });
-  const rearWindowZ = rearZ - frontSide * 0.135;
+  const rearWindowZ = rearZ - frontSide * (wallThickness / 2 + 0.005);
   const rearWindowRotation = frontSide > 0 ? Math.PI : 0;
-  addWindow(group, -3.5, rearWindowY, rearWindowZ, rearWindowWidth, rearWindowHeight, rearWindowRotation);
-  addWindow(group, 3.5, rearWindowY, rearWindowZ, rearWindowWidth, rearWindowHeight, rearWindowRotation);
+  rearWindows.forEach(item => addWindow(group, item.x, item.y, rearWindowZ, item.width, item.height, rearWindowRotation));
 
   const doorGap = 1.32;
-  const windowWidth = 1.75, windowHeight = 1.15, windowY = 1.85;
-  const windowHalfWidth = windowWidth / 2, windowHalfHeight = windowHeight / 2;
-  const windowOpening = centerX => ({
-    minX: centerX - windowHalfWidth,
-    maxX: centerX + windowHalfWidth,
-    minY: windowY - windowHalfHeight,
-    maxY: windowY + windowHalfHeight
+  const frontWindows = plan.facade.windows.filter(item => item.side === "front");
+  const windowOpening = item => ({
+    minX: item.x - item.width / 2,
+    maxX: item.x + item.width / 2,
+    minY: item.y - item.height / 2,
+    maxY: item.y + item.height / 2
   });
 
   addWallWithOpenings(group, colliders, id + "-front-wall-left", {
     minX: -halfW, maxX: -doorGap / 2, z: frontZ,
-    thickness: 0.26, height: wallHeight, material: wall,
-    openings: [windowOpening(-3.55)]
+    thickness: wallThickness, height: wallHeight, material: wall,
+    openings: frontWindows.filter(item => item.x < 0).map(windowOpening)
   });
   addWallWithOpenings(group, colliders, id + "-front-wall-right", {
     minX: doorGap / 2, maxX: halfW, z: frontZ,
-    thickness: 0.26, height: wallHeight, material: wall,
-    openings: [windowOpening(3.55)]
+    thickness: wallThickness, height: wallHeight, material: wall,
+    openings: frontWindows.filter(item => item.x > 0).map(windowOpening)
   });
-  addBox(group, null, id + "-front-lintel", 0, 2.22, frontZ, doorGap, 0.92, 0.26, wall);
+  addBox(group, null, id + "-front-lintel", 0, 2.22, frontZ, doorGap, 0.92, wallThickness, wall);
 
   const roofLayout = createGableRoofLayout({
     centerZ,
     halfDepth: halfD,
-    wallHeight
+    wallHeight,
+    pitch: plan.roof.pitch,
+    panelOverhang: plan.roof.overhang
   });
 
   for (const panel of roofLayout.panels) {
@@ -144,21 +154,20 @@ function buildHouse(group, colliders, config) {
     width + 0.5, 0.18, 0.16, trim
   );
 
-  const windowZ = frontZ + frontSide * 0.135;
+  const windowZ = frontZ + frontSide * (wallThickness / 2 + 0.005);
   const windowRotation = frontSide < 0 ? Math.PI : 0;
-  addWindow(group, -3.55, windowY, windowZ, windowWidth, windowHeight, windowRotation);
-  addWindow(group, 3.55, windowY, windowZ, windowWidth, windowHeight, windowRotation);
+  frontWindows.forEach(item => addWindow(group, item.x, item.y, windowZ, item.width, item.height, windowRotation));
 
-  const sillMaterial = makeMaterial(0xe0dacc, { roughness: 0.78 });
-  for (const [facadeName, facadeZ, outwardSide, centers, sillWidth, sillY] of [
-    ["front", windowZ, frontSide, [-3.55, 3.55], 1.95, windowY - windowHeight / 2 - 0.08],
-    ["rear", rearWindowZ, -frontSide, [-3.5, 3.5], 2.0, rearWindowY - rearWindowHeight / 2 - 0.08]
+  const sillMaterial = makeMaterial(trimColor, { roughness: 0.78 });
+  for (const [facadeName, facadeZ, outwardSide, windows] of [
+    ["front", windowZ, frontSide, frontWindows],
+    ["rear", rearWindowZ, -frontSide, rearWindows]
   ]) {
-    centers.forEach((windowX, index) => {
+    windows.forEach((item, index) => {
       addBox(
         group, null, id + "-" + facadeName + "-window-sill-" + index,
-        windowX, sillY, facadeZ + outwardSide * 0.035,
-        sillWidth, 0.12, 0.22, sillMaterial
+        item.x, item.y - item.height / 2 - 0.08, facadeZ + outwardSide * 0.035,
+        item.width + 0.2, 0.12, 0.22, sillMaterial
       );
     });
   }
@@ -198,13 +207,39 @@ function buildHouse(group, colliders, config) {
     id,
     centerZ,
     frontSide,
-    wallColor: interiorWallColor,
-    floorColor: interiorFloorColor
+    wallColor: interiorWallColor ?? plan.finish.wallColor,
+    floorColor: interiorFloorColor ?? plan.finish.floorColor,
+    planId
   }));
+
+  if (plan.details.porchPosts) {
+    const porchZ = frontZ + frontSide * 0.92;
+    const porchMetal = makeMaterial(0x565b58, { roughness: 0.82 });
+    addBox(group, null, id + "-porch-canopy", 0, 2.78, porchZ, 3.7, 0.16, 1.75, roof);
+    addBox(group, null, id + "-porch-beam", 0, 2.55, porchZ + frontSide * 0.68, 3.45, 0.16, 0.16, trim);
+    for (const postX of [-1.48, 1.48]) {
+      addBox(group, colliders, id + "-porch-post", postX, 0, porchZ + frontSide * 0.68,
+        0.14, 2.55, 0.14, porchMetal, true);
+    }
+  }
+  if (plan.details.entryStep) {
+    for (const [stepIndex, step] of [[0, 0.42], [1, 0.86]]) {
+      addBox(group, null, id + "-entry-step-" + stepIndex, 0, stepIndex * 0.1,
+        frontZ + frontSide * step, 2.05 - stepIndex * 0.18, 0.12, 0.62, foundation);
+    }
+  }
+  if (plan.details.chimney) {
+    const chimneyLocalZ = -1.15;
+    const chimneyZ = centerZ + frontSide * chimneyLocalZ;
+    const roofBaseY = wallHeight + Math.tan(plan.roof.pitch) * (halfD - Math.abs(chimneyLocalZ));
+    const chimney = makeMaterial(0x77736b, { roughness: 0.96 });
+    addBox(group, null, id + "-chimney", 4.55, roofBaseY, chimneyZ, 0.82, 1.45, 0.82, chimney);
+    addBox(group, null, id + "-chimney-cap", 4.55, roofBaseY + 1.4, chimneyZ, 0.98, 0.14, 0.98, trim);
+  }
 
   const door = createDoor(group, colliders, {
     id: id + "-front-door", x: 0, z: frontZ,
-    rotationY: frontSide < 0 ? Math.PI : 0, color: doorColor
+    rotationY: frontSide < 0 ? Math.PI : 0, color: doorColor ?? plan.facade.doorColor
   });
   const doorSpawns = createDoorSpawns({ doorZ: frontZ, frontSide });
 
@@ -253,13 +288,13 @@ export function buildExterior({ onDoorInteract = () => {} } = {}) {
   }
 
   const houseA = buildHouse(group, colliders, {
-    id: "house-a", centerZ: -17, frontSide: 1,
+    id: "house-a", planId: "houseA", centerZ: -17, frontSide: 1,
     wallColor: 0xc9c0af, roofColor: 0x555a59, doorColor: 0x6a574a,
     interiorWallColor: 0xd3cfc4, interiorFloorColor: 0x918d82,
     targetLocation: "houseA", streetSpawnKey: "outsideHouseA", onDoorInteract
   });
   const houseB = buildHouse(group, colliders, {
-    id: "house-b", centerZ: 17, frontSide: -1,
+    id: "house-b", planId: "houseB", centerZ: 17, frontSide: -1,
     wallColor: 0xb4c0bb, roofColor: 0x4b5355, doorColor: 0x536d69,
     interiorWallColor: 0xc6ceca, interiorFloorColor: 0x858c88,
     targetLocation: "houseB", streetSpawnKey: "outsideHouseB", onDoorInteract

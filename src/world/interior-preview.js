@@ -1,5 +1,7 @@
 import * as THREE from "three";
 import { makeMaterial } from "./geometry.js";
+import { getHousePlan } from "./house-plans.js";
+import { addPlanPartitions, addRoomFurnishings } from "./house-plan-geometry.js";
 
 /**
  * A static, non-interactive interior shell rendered only while the street is
@@ -14,8 +16,13 @@ export function buildWindowInteriorPreview({
   floorColor,
   width = 12,
   depth = 10,
-  wallHeight = 3.05
+  wallHeight = 3.05,
+  planId = id === "houseB" ? "houseB" : "houseA"
 }) {
+  const plan = getHousePlan(planId);
+  width = plan.footprint.width;
+  depth = plan.footprint.depth;
+  wallHeight = plan.wall.height;
   if (!id || ![centerZ, frontSide, width, depth, wallHeight].every(Number.isFinite)
     || ![-1, 1].includes(frontSide) || width <= 0 || depth <= 0 || wallHeight <= 0) {
     throw new TypeError("buildWindowInteriorPreview requires valid room dimensions and orientation.");
@@ -154,6 +161,19 @@ export function buildWindowInteriorPreview({
   lamp.name = id + "-preview-interior-light";
   lamp.position.set(0, 2.62, centerZ);
   room.add(lamp);
+
+  addPlanPartitions({
+    group: room,
+    plan,
+    centerZ,
+    frontSide,
+    material: wall,
+    prefix: id + "-preview-partition",
+    thickness: Math.max(0.08, plan.wall.thickness * 0.42),
+    height: wallHeight,
+    addTrim: false
+  });
+  addRoomFurnishings({ group: room, plan, centerZ, frontSide });
 
   // Keep the unused front boundary explicit in metadata for geometry tests.
   room.userData.frontZ = frontZ;

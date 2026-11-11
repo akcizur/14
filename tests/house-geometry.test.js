@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { buildExterior } from "../src/world/exterior.js";
 import { buildHouseA } from "../src/interiors/house-a.js";
 import { buildHouseB } from "../src/interiors/house-b.js";
+import { getHousePlan } from "../src/world/house-plans.js";
 
 test("opposing houses share the same roof profile and complete roof edge detail", () => {
   const street = buildExterior();
@@ -13,8 +14,9 @@ test("opposing houses share the same roof profile and complete roof edge detail"
     const ridge = street.group.getObjectByName(id + "-roof-ridge-cap");
 
     assert.ok(negativeSlope && positiveSlope && ridge);
-    assert.ok(Math.abs(negativeSlope.rotation.x + 0.34) < 1e-10);
-    assert.ok(Math.abs(positiveSlope.rotation.x - 0.34) < 1e-10);
+    const plan = getHousePlan(id === "house-a" ? "houseA" : "houseB");
+    assert.ok(Math.abs(negativeSlope.rotation.x + plan.roof.pitch) < 1e-10);
+    assert.ok(Math.abs(positiveSlope.rotation.x - plan.roof.pitch) < 1e-10);
     assert.ok(street.group.getObjectByName(id + "-roof-verge-left-north"));
     assert.ok(street.group.getObjectByName(id + "-roof-verge-right-south"));
     assert.ok(street.group.getObjectByName(id + "-front-gutter"));
@@ -93,4 +95,36 @@ test("both exterior houses contain correctly aligned static interior window prev
       maxZ: centerZ + 5
     });
   }
+});
+
+test("house plans generate distinct room layouts and internal partition geometry", () => {
+  const planA = getHousePlan("houseA");
+  const planB = getHousePlan("houseB");
+  const interiorA = buildHouseA();
+  const interiorB = buildHouseB();
+
+  assert.deepEqual(planA.rooms.map(room => room.type), ["living", "kitchen", "bedroom", "bathroom"]);
+  assert.deepEqual(planB.rooms.map(room => room.type), ["living", "bedroom", "bathroom", "office"]);
+  assert.notDeepEqual(planA.partitions, planB.partitions);
+  assert.notEqual(planA.roof.pitch, planB.roof.pitch);
+
+  for (const [interior, plan] of [[interiorA, planA], [interiorB, planB]]) {
+    const partitions = interior.group.children.filter(child => child.name.startsWith(interior.id + "-partition-"));
+    assert.ok(partitions.length >= plan.partitions.length * 2);
+    assert.ok(interior.group.getObjectByName(plan.id + "-procedural-furnishings"));
+  }
+});
+
+test("procedural interiors contain furniture appropriate to each room type", () => {
+  const interiorA = buildHouseA();
+  const interiorB = buildHouseB();
+  const furnitureA = interiorA.group.getObjectByName("houseA-procedural-furnishings");
+  const furnitureB = interiorB.group.getObjectByName("houseB-procedural-furnishings");
+
+  assert.ok(furnitureA.getObjectByName("living-sofa-base"));
+  assert.ok(furnitureA.getObjectByName("kitchen-lower-cabinets"));
+  assert.ok(furnitureA.getObjectByName("bedroom-bed-frame"));
+  assert.ok(furnitureA.getObjectByName("bathroom-bath"));
+  assert.ok(furnitureB.getObjectByName("living-sofa-base"));
+  assert.ok(furnitureB.getObjectByName("office-desk"));
 });

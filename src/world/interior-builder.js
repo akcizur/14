@@ -2,85 +2,112 @@ import * as THREE from "three";
 import { addBox, addWallWithOpenings, addWindow, makeMaterial } from "./geometry.js";
 import { createDoor } from "./interactions/door-transition.js";
 import { createDoorSpawns } from "../scenes/door-spawns.js";
+import { getHousePlan } from "./house-plans.js";
+import { addPlanPartitions, addRoomFurnishings } from "./house-plan-geometry.js";
 
 export function buildEmptyInterior({
-  id, centerZ, frontSide, wallColor = 0xd0ccc0,
-  floorColor = 0x8c8980, doorColor = 0x665649,
-  doorOpenAngle = -1.62, streetSpawnKey, onExit = () => {}
+  id, planId = id === "houseB" ? "houseB" : "houseA",
+  centerZ, frontSide, wallColor, floorColor,
+  doorColor, doorOpenAngle = -1.62,
+  streetSpawnKey, onExit = () => {}
 }) {
+  const plan = getHousePlan(planId);
   const group = new THREE.Group();
   group.name = "scene-" + id;
   const colliders = [], interactables = [];
-  const width = 12, depth = 10, halfW = width / 2, halfD = depth / 2;
-  const wallHeight = 3.05;
+  const { width, depth } = plan.footprint;
+  const halfW = width / 2, halfD = depth / 2;
+  const wallHeight = plan.wall.height;
+  const wallThickness = plan.wall.thickness;
   const frontZ = centerZ + frontSide * halfD;
   const rearZ = centerZ - frontSide * halfD;
-  const wall = makeMaterial(wallColor);
-  const floor = makeMaterial(floorColor, { roughness: 0.96 });
-  const ceiling = makeMaterial(0xd8d5ca);
+  const wall = makeMaterial(wallColor ?? plan.finish.wallColor);
+  const floor = makeMaterial(floorColor ?? plan.finish.floorColor, { roughness: 0.96 });
+  const ceiling = makeMaterial(plan.finish.ceilingColor);
 
   addBox(group, null, id + "-floor", 0, -0.18, centerZ, width, 0.18, depth, floor);
   addBox(group, null, id + "-ceiling", 0, wallHeight, centerZ, width, 0.16, depth, ceiling);
-  addBox(group, colliders, id + "-left-wall", -halfW + 0.12, 0, centerZ, 0.24, wallHeight, depth, wall, true);
-  addBox(group, colliders, id + "-right-wall", halfW - 0.12, 0, centerZ, 0.24, wallHeight, depth, wall, true);
+  addBox(group, colliders, id + "-left-wall", -halfW + wallThickness / 2, 0, centerZ,
+    wallThickness, wallHeight, depth, wall, true);
+  addBox(group, colliders, id + "-right-wall", halfW - wallThickness / 2, 0, centerZ,
+    wallThickness, wallHeight, depth, wall, true);
+
+  const rearWindows = plan.facade.windows.filter(item => item.side === "rear");
   addWallWithOpenings(group, colliders, id + "-rear-wall", {
     minX: -halfW, maxX: halfW, z: rearZ,
-    thickness: 0.24, height: wallHeight, material: wall,
-    openings: [-3.5, 3.5].map(centerX => ({
-      minX: centerX - 0.9,
-      maxX: centerX + 0.9,
-      minY: 1.65 - 0.575,
-      maxY: 1.65 + 0.575
+    thickness: wallThickness, height: wallHeight, material: wall,
+    openings: rearWindows.map(item => ({
+      minX: item.x - item.width / 2,
+      maxX: item.x + item.width / 2,
+      minY: item.y - item.height / 2,
+      maxY: item.y + item.height / 2
     }))
   });
 
   const doorGap = 1.32;
-  const frontWindowWidth = 1.75, frontWindowHeight = 1.15, frontWindowY = 1.85;
-  const frontWindowOpening = centerX => ({
-    minX: centerX - frontWindowWidth / 2,
-    maxX: centerX + frontWindowWidth / 2,
-    minY: frontWindowY - frontWindowHeight / 2,
-    maxY: frontWindowY + frontWindowHeight / 2
+  const frontWindows = plan.facade.windows.filter(item => item.side === "front");
+  const makeOpening = item => ({
+    minX: item.x - item.width / 2,
+    maxX: item.x + item.width / 2,
+    minY: item.y - item.height / 2,
+    maxY: item.y + item.height / 2
   });
   addWallWithOpenings(group, colliders, id + "-front-wall-left", {
     minX: -halfW, maxX: -doorGap / 2, z: frontZ,
-    thickness: 0.24, height: wallHeight, material: wall,
-    openings: [frontWindowOpening(-3.55)]
+    thickness: wallThickness, height: wallHeight, material: wall,
+    openings: frontWindows.filter(item => item.x < 0).map(makeOpening)
   });
   addWallWithOpenings(group, colliders, id + "-front-wall-right", {
     minX: doorGap / 2, maxX: halfW, z: frontZ,
-    thickness: 0.24, height: wallHeight, material: wall,
-    openings: [frontWindowOpening(3.55)]
+    thickness: wallThickness, height: wallHeight, material: wall,
+    openings: frontWindows.filter(item => item.x > 0).map(makeOpening)
   });
-  addBox(group, null, id + "-front-lintel", 0, 2.2, frontZ, doorGap, 0.85, 0.24, wall);
-  const frontWindowZ = frontZ - frontSide * 0.135;
-  const frontWindowRotation = frontSide > 0 ? Math.PI : 0;
-  addWindow(group, -3.55, frontWindowY, frontWindowZ, frontWindowWidth, frontWindowHeight, frontWindowRotation);
-  addWindow(group, 3.55, frontWindowY, frontWindowZ, frontWindowWidth, frontWindowHeight, frontWindowRotation);
+  addBox(group, null, id + "-front-lintel", 0, 2.2, frontZ, doorGap, 0.85, wallThickness, wall);
 
-  const baseboard = makeMaterial(0xb5b0a4);
-  addBox(group, null, id + "-baseboard-left", -halfW + 0.25, 0, centerZ, 0.09, 0.18, depth - 0.4, baseboard);
-  addBox(group, null, id + "-baseboard-right", halfW - 0.25, 0, centerZ, 0.09, 0.18, depth - 0.4, baseboard);
-  addBox(group, null, id + "-baseboard-front-left", -3.33, 0, frontZ - frontSide * 0.135, 5.34, 0.18, 0.09, baseboard);
-  addBox(group, null, id + "-baseboard-front-right", 3.33, 0, frontZ - frontSide * 0.135, 5.34, 0.18, 0.09, baseboard);
-  addBox(group, null, id + "-baseboard-rear", 0, 0, rearZ + frontSide * 0.135, width, 0.18, 0.09, baseboard);
-  const rearWindowZ = rearZ + frontSide * 0.135;
-  const rearWindowRotation = frontSide < 0 ? Math.PI : 0;
-  addWindow(group, -3.5, 1.65, rearWindowZ, 1.8, 1.15, rearWindowRotation);
-  addWindow(group, 3.5, 1.65, rearWindowZ, 1.8, 1.15, rearWindowRotation);
+  const wallTrim = makeMaterial(plan.facade.trimColor, { roughness: 0.78 });
+  const baseboardHeight = 0.16;
+  addBox(group, null, id + "-baseboard-left", -halfW + 0.25, 0, centerZ,
+    0.09, baseboardHeight, depth - 0.4, wallTrim);
+  addBox(group, null, id + "-baseboard-right", halfW - 0.25, 0, centerZ,
+    0.09, baseboardHeight, depth - 0.4, wallTrim);
+  addBox(group, null, id + "-baseboard-front-left", -3.33, 0, frontZ - frontSide * 0.135,
+    5.34, baseboardHeight, 0.09, wallTrim);
+  addBox(group, null, id + "-baseboard-front-right", 3.33, 0, frontZ - frontSide * 0.135,
+    5.34, baseboardHeight, 0.09, wallTrim);
+  addBox(group, null, id + "-baseboard-rear", 0, 0, rearZ + frontSide * 0.135,
+    width, baseboardHeight, 0.09, wallTrim);
+
+  for (const item of [...frontWindows, ...rearWindows]) {
+    const windowZ = item.side === "front"
+      ? frontZ - frontSide * 0.135
+      : rearZ + frontSide * 0.135;
+    const rotation = item.side === "front"
+      ? (frontSide > 0 ? Math.PI : 0)
+      : (frontSide < 0 ? Math.PI : 0);
+    addWindow(group, item.x, item.y, windowZ, item.width, item.height, rotation);
+  }
+
+  addPlanPartitions({
+    group,
+    colliders,
+    plan,
+    centerZ,
+    frontSide,
+    material: wall,
+    prefix: id + "-partition"
+  });
+  addRoomFurnishings({ group, plan, centerZ, frontSide });
 
   const door = createDoor(group, colliders, {
-    id: id + "-exit-door", x: 0, z: frontZ,
+    id: id + "-exit-door",
+    x: 0,
+    z: frontZ,
     rotationY: frontSide < 0 ? Math.PI : 0,
-    color: doorColor,
+    color: doorColor ?? plan.facade.doorColor,
     openAngle: doorOpenAngle
   });
   const doorSpawns = createDoorSpawns({ doorZ: frontZ, frontSide });
-
-  const exitPoint = {
-    x: 0,
-    z: frontZ - frontSide * 1.12
-  };
+  const exitPoint = { x: 0, z: frontZ - frontSide * 1.12 };
   interactables.push({
     id: id + "-exit",
     x: exitPoint.x,
@@ -96,23 +123,31 @@ export function buildEmptyInterior({
     emissiveIntensity: 0.72,
     roughness: 0.34
   });
-  addBox(group, null, id + "-ceiling-light-body", 0, 2.98, centerZ, 0.92, 0.08, 0.52, fixtureBody);
-  addBox(group, null, id + "-ceiling-light-diffuser", 0, 2.94, centerZ, 0.76, 0.04, 0.36, fixtureGlow);
-
-  const lamp = new THREE.PointLight(0xffe8c6, 10, 16, 2);
-  lamp.position.set(0, 2.72, centerZ);
-  group.add(lamp);
-  group.add(new THREE.HemisphereLight(0xe8e5d9, 0x77746d, 0.42));
+  for (const room of plan.rooms) {
+    const localZ = centerZ + frontSide * room.z;
+    addBox(group, null, id + "-" + room.id + "-ceiling-light-body",
+      room.x, wallHeight - 0.12, localZ, 0.72, 0.07, 0.42, fixtureBody);
+    addBox(group, null, id + "-" + room.id + "-ceiling-light-diffuser",
+      room.x, wallHeight - 0.18, localZ, 0.58, 0.035, 0.3, fixtureGlow);
+    const lamp = new THREE.PointLight(0xffe8c6, 4.6, 9, 2);
+    lamp.position.set(room.x, wallHeight - 0.42, localZ);
+    group.add(lamp);
+  }
+  const hallLamp = new THREE.PointLight(0xffe8c6, 3.2, 9, 2);
+  hallLamp.position.set(0, wallHeight - 0.4, centerZ);
+  group.add(hallLamp);
+  group.add(new THREE.HemisphereLight(0xe8e5d9, 0x77746d, 0.5));
 
   return {
     id, type: "interior", group, colliders, interactables,
+    plan,
     doors: { exit: door },
     spawn: doorSpawns.inside,
     spawns: { entry: doorSpawns.inside },
     navigation: {
       bounds: {
-        minX: -5.55, maxX: 5.55,
-        minZ: centerZ - 4.55, maxZ: centerZ + 4.55
+        minX: -halfW + 0.45, maxX: halfW - 0.45,
+        minZ: centerZ - halfD + 0.45, maxZ: centerZ + halfD - 0.45
       }
     }
   };
