@@ -166,7 +166,7 @@ function buildHouse(group, colliders, config) {
   const windowRotation = frontSide < 0 ? Math.PI : 0;
   frontWindows.forEach(item => addWindow(group, item.x, item.y, windowZ, item.width, item.height, windowRotation));
 
-  const sillMaterial = makeMaterial(trimColor, { roughness: 0.78 });
+  const sillMaterial = makeSurfaceMaterial("concrete", trimColor, { roughness: 0.84, bumpScale: 0.018 }, [1.2, 1]);
   for (const [facadeName, facadeZ, outwardSide, windows] of [
     ["front", windowZ, frontSide, frontWindows],
     ["rear", rearWindowZ, -frontSide, rearWindows]
