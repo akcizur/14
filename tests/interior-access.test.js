@@ -45,6 +45,13 @@ function hasReachableCellInRoom(interior, room, controller, step = 0.12) {
   return false;
 }
 
+function createInteriorController(interior) {
+  const controller = createPlayerController({ camera: createCamera() });
+  controller.setWorld({ colliders: interior.colliders, navigation: interior.navigation });
+  assert.equal(controller.setSpawn(interior.spawn), true, interior.id + " spawn must be clear");
+  return controller;
+}
+
 test("every generated room is reachable from the entrance in both houses", () => {
   const cases = [
     { interior: buildHouseA({ seed: 1401 }) },
@@ -52,9 +59,7 @@ test("every generated room is reachable from the entrance in both houses", () =>
   ];
 
   for (const { interior } of cases) {
-    const controller = createPlayerController({ camera: createCamera() });
-    controller.setWorld({ colliders: interior.colliders, navigation: interior.navigation });
-    assert.equal(controller.setSpawn(interior.spawn), true, interior.id + " spawn must be clear");
+    const controller = createInteriorController(interior);
     assert.equal(
       interior.colliders.some(collider => collider.name.includes("-partition-") && collider.name.includes("-lintel-")),
       false,
@@ -78,6 +83,29 @@ test("all internal room door openings provide practical player clearance", () =>
       for (const opening of partition.openings ?? []) {
         assert.ok(opening.width >= minWidth, interior.id + " narrow doorway in " + partition.id);
         assert.ok(opening.height === undefined || opening.height >= 2.05);
+      }
+    }
+  }
+});
+
+test("the center of every internal doorway remains clear of furniture and wall colliders", () => {
+  for (const interior of [buildHouseA({ seed: 1401 }), buildHouseB({ seed: 1402 })]) {
+    const controller = createInteriorController(interior);
+    const centerZ = interior.id === "houseA" ? -17 : 17;
+    const frontSide = interior.id === "houseA" ? 1 : -1;
+
+    for (const partition of interior.plan.partitions) {
+      for (const opening of partition.openings ?? []) {
+        const localX = partition.axis === "x" ? partition.at : opening.at;
+        const localZ = partition.axis === "x" ? opening.at : partition.at;
+        const worldZ = centerZ + frontSide * localZ;
+        const blocking = controller.getBlockingCollidersAt(localX, worldZ);
+
+        assert.deepEqual(
+          blocking,
+          [],
+          interior.id + " doorway center is obstructed: " + partition.id
+        );
       }
     }
   }
