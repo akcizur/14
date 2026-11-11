@@ -113,7 +113,7 @@ async function fetchHdri() {
   const variant = chooseResolution(files.hdri);
   const hdr = variant?.data?.hdr;
   if (!hdr?.url) throw new Error("No HDR file available for " + id);
-  const target = path.join(PUBLIC, "lighting", id + "_1k.hdr");
+  const target = path.join(PUBLIC, "lighting", id + "_" + variant.name + ".hdr");
   const result = await download(hdr.url, target, hdr.md5);
   console.log("    HDR " + variant.name + " " + Math.round(result.bytes / 1024) + " KB");
 
