@@ -3,7 +3,7 @@ import { addBox, addWallWithOpenings, addWindow, makeMaterial, makeSurfaceMateri
 import { createDoor } from "./interactions/door-transition.js";
 import { createDoorSpawns } from "../scenes/door-spawns.js";
 import { getHousePlan } from "./house-plans.js";
-import { addPlanPartitions, addRoomFurnishings } from "./house-plan-geometry.js";
+import { addPlanPartitions, addRoomFurnishings, addRoomFloorFinishes } from "./house-plan-geometry.js";
 
 export function buildEmptyInterior({
   id, planId = id === "houseB" ? "houseB" : "houseA",
@@ -108,6 +108,7 @@ export function buildEmptyInterior({
     material: wall,
     prefix: id + "-partition"
   });
+  addRoomFloorFinishes({ group, plan, centerZ, frontSide });
   addRoomFurnishings({ group, plan, centerZ, frontSide, colliders });
 
   const door = createDoor(group, colliders, {
