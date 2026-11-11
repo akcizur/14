@@ -186,3 +186,34 @@ test("procedural house layouts keep the entrance spawn clear of all generated wa
     );
   }
 });
+
+
+test("roof drainage pipes terminate at the gutter and use exact connector spans", () => {
+  const street = buildExterior();
+
+  for (const id of ["house-a", "house-b"]) {
+    for (const facade of ["front", "rear"]) {
+      const gutter = street.group.getObjectByName(id + "-" + facade + "-gutter");
+      assert.ok(gutter, id + " " + facade + " gutter must exist");
+
+      for (const side of ["left", "right"]) {
+        const pipe = street.group.getObjectByName(id + "-" + facade + "-downpipe-" + side);
+        const connector = street.group.getObjectByName(id + "-" + facade + "-gutter-connector-" + side);
+        assert.ok(pipe && connector, id + " " + facade + " " + side + " drainage must be complete");
+
+        const pipeHeight = pipe.geometry.parameters.height;
+        const pipeBottom = pipe.position.y - pipeHeight / 2;
+        const pipeTop = pipe.position.y + pipeHeight / 2;
+        assert.ok(Math.abs(pipeBottom - 0.05) < 1e-10, "downpipe should end just above ground");
+        assert.ok(Math.abs(pipeTop - gutter.position.y) < 1e-10, "downpipe should meet the gutter");
+
+        const connectorLength = connector.geometry.parameters.height;
+        const actualSpan = Math.abs(gutter.position.z - pipe.position.z);
+        assert.ok(Math.abs(connectorLength - actualSpan) < 1e-10,
+          "gutter connector should span the actual wall-to-gutter distance");
+        assert.ok(Math.abs(connector.position.y - gutter.position.y) < 1e-10);
+        assert.ok(Math.abs(connector.position.z - (gutter.position.z + pipe.position.z) / 2) < 1e-10);
+      }
+    }
+  }
+});
