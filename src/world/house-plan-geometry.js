@@ -43,7 +43,7 @@ export function addPlanPartitions({
       .map(opening => ({
         start: opening.at - opening.width / 2,
         end: opening.at + opening.width / 2,
-        height: opening.height ?? 2.12
+        height: opening.height ?? plan.interiorDoor?.height ?? 2.15
       }))
       .sort((a, b) => a.start - b.start);
 
@@ -63,10 +63,10 @@ export function addPlanPartitions({
         opening.height, height - opening.height, thickness, wallMaterial, centerZ, frontSide);
 
       if (addTrim) {
-        const jamb = 0.055;
+        const jamb = plan.interiorDoor?.trimWidth ?? 0.065;
         addPartitionPiece(group, null, prefix + "-" + partition.id + "-jamb-" + index + "-a",
           partition, opening.start + jamb / 2, jamb, 0, opening.height,
-          thickness + 0.045, trimMaterial, centerZ, frontSide);
+          thickness + (plan.interiorDoor?.trimDepth ?? 0.055), trimMaterial, centerZ, frontSide);
         addPartitionPiece(group, null, prefix + "-" + partition.id + "-jamb-" + index + "-b",
           partition, opening.end - jamb / 2, jamb, 0, opening.height,
           thickness + 0.045, trimMaterial, centerZ, frontSide);

@@ -40,11 +40,17 @@ export function createPlayerController({
   }
   function blockingCollidersAt(x, z) {
     const radius = player.radius;
-    return activeColliders.filter(collider =>
-      collider.enabled !== false &&
-      x + radius > collider.minX && x - radius < collider.maxX &&
-      z + radius > collider.minZ && z - radius < collider.maxZ
-    );
+    const radiusSquared = radius * radius;
+    return activeColliders.filter(collider => {
+      if (collider.enabled === false) return false;
+      // Treat the player as a circle in the X/Z plane rather than an
+      // expanded square. This preserves proper clearance at doorway corners.
+      const closestX = clamp(x, collider.minX, collider.maxX);
+      const closestZ = clamp(z, collider.minZ, collider.maxZ);
+      const dx = x - closestX;
+      const dz = z - closestZ;
+      return dx * dx + dz * dz < radiusSquared - 1e-8;
+    });
   }
   function canMove(x, z) {
     if (!Number.isFinite(x) || !Number.isFinite(z)) return false;
@@ -63,8 +69,28 @@ export function createPlayerController({
     return true;
   }
   function movePlayer(dx, dz) {
-    if (Math.abs(dx) > 0) tryMoveTo(player.x + dx, player.z);
-    if (Math.abs(dz) > 0) tryMoveTo(player.x, player.z + dz);
+    const distance = Math.hypot(dx, dz);
+    if (distance <= 1e-9) return;
+    const maxStep = Math.max(0.06, Math.min(0.14, player.radius * 0.48));
+    const steps = Math.max(1, Math.ceil(distance / maxStep));
+    const stepX = dx / steps;
+    const stepZ = dz / steps;
+
+    for (let index = 0; index < steps; index += 1) {
+      const nextX = player.x + stepX;
+      const nextZ = player.z + stepZ;
+      if (canMove(nextX, nextZ)) {
+        player.x = nextX;
+        player.z = nextZ;
+        continue;
+      }
+
+      // Resolve axes independently only when the diagonal step is blocked.
+      // This lets the player slide naturally along a wall instead of sticking
+      // on its corner, while still keeping every sub-step collision-safe.
+      if (Math.abs(stepX) > 1e-9 && canMove(nextX, player.z)) player.x = nextX;
+      if (Math.abs(stepZ) > 1e-9 && canMove(player.x, nextZ)) player.z = nextZ;
+    }
   }
   function nearestInteractable() {
     let nearest = null, nearestDistance = Infinity;

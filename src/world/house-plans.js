@@ -5,6 +5,8 @@ const deepFreeze = value => {
   return value;
 };
 
+const INTERIOR_DOOR = { width: 1.24, height: 2.15, trimWidth: 0.065, trimDepth: 0.055 };
+
 const BASE_ENTRY = {
   x: 0,
   width: 1.32,
@@ -27,6 +29,7 @@ export const HOUSE_PLANS = deepFreeze({
     footprint: { width: 12, depth: 10 },
     wall: { height: 3.05, thickness: 0.26 },
     entry: BASE_ENTRY,
+    interiorDoor: INTERIOR_DOOR,
     roof: { type: "gable", pitch: 0.34, overhang: 0.8, sideOverhang: 0.42, color: 0x555a59 },
     facade: {
       wallColor: 0xc9c0af,
@@ -48,8 +51,8 @@ export const HOUSE_PLANS = deepFreeze({
       { id: "bathroom", name: "Koupelna", type: "bathroom", x: 3.62, z: -2.5, width: 4.75, depth: 5 }
     ],
     partitions: [
-      { id: "hall-left", axis: "x", at: -1.25, from: -5, to: 5, openings: [{ at: -2.5, width: 0.94 }, { at: 2.5, width: 0.94 }] },
-      { id: "hall-right", axis: "x", at: 1.25, from: -5, to: 5, openings: [{ at: -2.5, width: 0.94 }, { at: 2.5, width: 0.94 }] },
+      { id: "hall-left", axis: "x", at: -1.25, from: -5, to: 5, openings: [{ at: -2.5, width: 1.24 }, { at: 2.5, width: 1.24 }] },
+      { id: "hall-right", axis: "x", at: 1.25, from: -5, to: 5, openings: [{ at: -2.5, width: 1.24 }, { at: 2.5, width: 1.24 }] },
       { id: "room-divider-left", axis: "z", at: 0, from: -6, to: -1.25, openings: [] },
       { id: "room-divider-right", axis: "z", at: 0, from: 1.25, to: 6, openings: [] }
     ],
@@ -92,10 +95,10 @@ export const HOUSE_PLANS = deepFreeze({
       { id: "office", name: "Pracovna", type: "office", x: 4.35, z: -2.5, width: 3.3, depth: 5 }
     ],
     partitions: [
-      { id: "rear-divider-left", axis: "z", at: 0, from: -6, to: -1.55, openings: [{ at: -3.8, width: 0.94 }] },
-      { id: "rear-divider-right", axis: "z", at: 0, from: -1.55, to: 6, openings: [{ at: 0.7, width: 0.9 }, { at: 4.0, width: 0.9 }] },
-      { id: "bed-bath-divider", axis: "x", at: -1.55, from: -5, to: 0, openings: [{ at: -2.5, width: 0.9 }] },
-      { id: "bath-office-divider", axis: "x", at: 2.7, from: -5, to: 0, openings: [{ at: -2.5, width: 0.9 }] }
+      { id: "rear-divider-left", axis: "z", at: 0, from: -6, to: -1.55, openings: [{ at: -3.8, width: 1.24 }] },
+      { id: "rear-divider-right", axis: "z", at: 0, from: -1.55, to: 6, openings: [{ at: 0.7, width: 1.24 }, { at: 4.0, width: 1.24 }] },
+      { id: "bed-bath-divider", axis: "x", at: -1.55, from: -5, to: 0, openings: [{ at: -2.5, width: 1.24 }] },
+      { id: "bath-office-divider", axis: "x", at: 2.7, from: -5, to: 0, openings: [{ at: -2.5, width: 1.24 }] }
     ],
     finish: { floorColor: 0x858c88, wallColor: 0xc6ceca, ceilingColor: 0xd9dcd6 },
     details: {
@@ -151,8 +154,8 @@ function varyCentralHall(plan, random) {
     { ...plan.rooms[3], x: rightX, z: rearZ, width: sideWidth, depth: rearDepth }
   ];
   plan.partitions = [
-    { id: "hall-left", axis: "x", at: left, from: -halfD, to: halfD, openings: [{ at: rearZ, width: 0.94 }, { at: frontZ, width: 0.94 }] },
-    { id: "hall-right", axis: "x", at: right, from: -halfD, to: halfD, openings: [{ at: rearZ, width: 0.94 }, { at: frontZ, width: 0.94 }] },
+    { id: "hall-left", axis: "x", at: left, from: -halfD, to: halfD, openings: [{ at: rearZ, width: plan.interiorDoor.width }, { at: frontZ, width: plan.interiorDoor.width }] },
+    { id: "hall-right", axis: "x", at: right, from: -halfD, to: halfD, openings: [{ at: rearZ, width: plan.interiorDoor.width }, { at: frontZ, width: plan.interiorDoor.width }] },
     { id: "room-divider-left", axis: "z", at: dividerZ, from: -halfW, to: left, openings: [] },
     { id: "room-divider-right", axis: "z", at: dividerZ, from: right, to: halfW, openings: [] }
   ];
@@ -183,10 +186,10 @@ function varyFiveRoomPlan(plan, random) {
     { ...plan.rooms[4], x: officeX, width: officeWidth }
   ];
   plan.partitions = [
-    { id: "rear-divider-left", axis: "z", at: 0, from: -6, to: leftDivider, openings: [{ at: bedroomX, width: 0.94 }] },
-    { id: "rear-divider-right", axis: "z", at: 0, from: leftDivider, to: 6, openings: [{ at: bathroomX, width: 0.9 }, { at: officeX, width: 0.9 }] },
-    { id: "bed-bath-divider", axis: "x", at: leftDivider, from: -5, to: 0, openings: [{ at: -2.5, width: 0.9 }] },
-    { id: "bath-office-divider", axis: "x", at: rightDivider, from: -5, to: 0, openings: [{ at: -2.5, width: 0.9 }] }
+    { id: "rear-divider-left", axis: "z", at: 0, from: -6, to: leftDivider, openings: [{ at: bedroomX, width: plan.interiorDoor.width }] },
+    { id: "rear-divider-right", axis: "z", at: 0, from: leftDivider, to: 6, openings: [{ at: bathroomX, width: plan.interiorDoor.width }, { at: officeX, width: plan.interiorDoor.width }] },
+    { id: "bed-bath-divider", axis: "x", at: leftDivider, from: -5, to: 0, openings: [{ at: -2.5, width: plan.interiorDoor.width }] },
+    { id: "bath-office-divider", axis: "x", at: rightDivider, from: -5, to: 0, openings: [{ at: -2.5, width: plan.interiorDoor.width }] }
   ];
   plan.facade.windows = [
     { side: "front", x: -3.55, width: 1.75, height: 1.15, y: 1.85 },
@@ -231,7 +234,7 @@ export function generateHousePlan(seed, archetype = "houseA") {
 export function validateHousePlan(plan) {
   const errors = [];
   const fail = message => errors.push(message);
-  if (!plan || !plan.footprint || !plan.wall || !plan.entry) {
+  if (!plan || !plan.footprint || !plan.wall || !plan.entry || !plan.interiorDoor) {
     return { valid: false, errors: ["House plan is missing its footprint, wall or entrance."] };
   }
 
@@ -251,6 +254,12 @@ export function validateHousePlan(plan) {
   }
   if (plan.entry.x - plan.entry.width / 2 < -halfW || plan.entry.x + plan.entry.width / 2 > halfW) {
     fail("Entrance extends outside the footprint.");
+  }
+
+  if (![plan.interiorDoor.width, plan.interiorDoor.height].every(Number.isFinite)
+    || plan.interiorDoor.width < 1.2 || plan.interiorDoor.height < 2
+    || plan.interiorDoor.height >= plan.wall.height) {
+    fail("Interior doorways must provide at least 1.2m width and valid head clearance.");
   }
 
   const roomIds = new Set();
@@ -293,7 +302,8 @@ export function validateHousePlan(plan) {
       const start = opening.at - opening.width / 2;
       const end = opening.at + opening.width / 2;
       if (![opening.at, opening.width].every(Number.isFinite) || opening.width <= 0
-        || start < previousEnd - 1e-8 || end > partition.to + 1e-8) {
+        || start < previousEnd - 1e-8 || end > partition.to + 1e-8
+        || opening.width < plan.interiorDoor.width - 1e-8) {
         fail((partition.id || "Partition") + " has invalid or overlapping openings.");
       }
       previousEnd = end;
