@@ -85,35 +85,51 @@ function buildTree(group, colliders, tree, index) {
     addBranch(root, branchStarts[branch], end, 0.08, bark, "garden-tree-branch-" + branch);
   }
 
-  const leafColors = [0x5f7758, 0x6b805e, 0x788968, 0x536b50, 0x82916c];
-  const leafMaterials = leafColors.map(color => new THREE.MeshStandardMaterial({
-    color,
-    roughness: 0.96,
+  const leafColors = [0x4f694b, 0x5b754f, 0x668057, 0x72885c, 0x819064];
+  const leafGeometry = new THREE.SphereGeometry(0.25, 10, 8);
+  const leafMaterial = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    roughness: 0.98,
     metalness: 0,
-    flatShading: true
-  }));
-  const leafGeometry = new THREE.IcosahedronGeometry(0.82, 1);
+    vertexColors: false
+  });
   const crownRadius = tree.crownRadius ?? 1.25;
   const crownY = (tree.crownY ?? 2.0) + 0.6;
-  const clusterCount = 13;
+  const clusterCount = 82;
+  const foliage = new THREE.InstancedMesh(leafGeometry, leafMaterial, clusterCount);
+  foliage.name = "garden-tree-foliage-" + index;
+  foliage.castShadow = true;
+  foliage.receiveShadow = true;
+  const matrix = new THREE.Matrix4();
+  const position = new THREE.Vector3();
+  const quaternion = new THREE.Quaternion();
+  const scale = new THREE.Vector3();
 
   for (let cluster = 0; cluster < clusterCount; cluster += 1) {
-    const angle = (cluster / clusterCount) * Math.PI * 2 + random() * 0.28;
-    const radial = Math.sqrt(random()) * crownRadius * 0.7;
-    const scale = 0.62 + random() * 0.34;
-    const canopy = addMesh(
-      root,
-      "garden-tree-foliage-" + index + "-" + cluster,
-      leafGeometry,
-      leafMaterials[Math.floor(random() * leafMaterials.length)],
+    const angle = random() * Math.PI * 2;
+    const radial = Math.sqrt(random()) * crownRadius * 0.94;
+    const vertical = (random() * 2 - 1) * 0.78;
+    const size = 0.66 + random() * 0.66;
+    position.set(
       Math.cos(angle) * radial,
-      crownY + (random() - 0.45) * 1.15,
+      crownY + vertical,
       Math.sin(angle) * radial
     );
-    canopy.scale.set(scale * 1.05, scale * (0.82 + random() * 0.3), scale);
-    canopy.rotation.set(random() * 0.4, random() * Math.PI, random() * 0.3);
-    canopy.castShadow = true;
+    quaternion.setFromEuler(new THREE.Euler(
+      random() * 0.55,
+      random() * Math.PI * 2,
+      random() * 0.55
+    ));
+    scale.set(size * (0.9 + random() * 0.18), size, size * (0.9 + random() * 0.18));
+    matrix.compose(position, quaternion, scale);
+    foliage.setMatrixAt(cluster, matrix);
+    const tint = new THREE.Color(leafColors[Math.floor(random() * leafColors.length)]);
+    tint.multiplyScalar(0.88 + random() * 0.22);
+    foliage.setColorAt(cluster, tint);
   }
+  foliage.instanceMatrix.needsUpdate = true;
+  if (foliage.instanceColor) foliage.instanceColor.needsUpdate = true;
+  root.add(foliage);
 
   return root;
 }
