@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { WORLD_PLAN } from "./world-plan.js";
 import { makeSurfaceMaterial } from "./geometry.js";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 
 const DEFAULT_TRAFFIC_PLAN = WORLD_PLAN.street.traffic;
 const CAR_LENGTH = DEFAULT_TRAFFIC_PLAN.carLength;
@@ -48,7 +49,7 @@ function addWheel(parent, name, x, z, radius, width, tireMaterial, hubMaterial) 
 
   const tire = addPart(
     wheel,
-    new THREE.CylinderGeometry(radius, radius, width, 12),
+    new THREE.CylinderGeometry(radius, radius, width, 20),
     tireMaterial,
     name + "-tire",
     0,
@@ -59,7 +60,7 @@ function addWheel(parent, name, x, z, radius, width, tireMaterial, hubMaterial) 
 
   const hub = addPart(
     wheel,
-    new THREE.CylinderGeometry(radius * 0.44, radius * 0.44, width * 1.06, 12),
+    new THREE.CylinderGeometry(radius * 0.48, radius * 0.48, width * 1.08, 20),
     hubMaterial,
     name + "-hub",
     0,
@@ -68,6 +69,30 @@ function addWheel(parent, name, x, z, radius, width, tireMaterial, hubMaterial) 
     false
   );
   hub.rotation.x = Math.PI / 2;
+  for (const side of [-1, 1]) {
+    const ring = addPart(
+      wheel,
+      new THREE.TorusGeometry(radius * 0.72, radius * 0.075, 6, 24),
+      hubMaterial,
+      name + "-rim-ring",
+      0,
+      0,
+      side * (width * 0.52),
+      false
+    );
+    ring.rotation.z = 0;
+  }
+  const centerCap = addPart(
+    wheel,
+    new THREE.CylinderGeometry(radius * 0.17, radius * 0.17, width * 1.13, 16),
+    hubMaterial,
+    name + "-center-cap",
+    0,
+    0,
+    0,
+    false
+  );
+  centerCap.rotation.x = Math.PI / 2;
 
   parent.add(wheel);
   return wheel;
@@ -97,22 +122,29 @@ function createCarModel(color) {
     emissiveIntensity: 0.12
   });
 
-  addPart(root, new THREE.BoxGeometry(4.35, 0.56, 1.72), paint, "car-body", -0.05, 0.76, 0);
-  addPart(root, new THREE.BoxGeometry(1.2, 0.34, 1.68), paint, "car-hood", 1.34, 0.91, 0);
-  addPart(root, new THREE.BoxGeometry(0.9, 0.3, 1.66), paint, "car-rear-deck", -1.56, 0.91, 0);
-  addPart(root, new THREE.BoxGeometry(2.0, 0.13, 1.43), paint, "car-roof", -0.22, 1.62, 0);
+  addPart(root, new RoundedBoxGeometry(4.35, 0.56, 1.72, 4, 0.14), paint, "car-body", -0.05, 0.76, 0);
+  addPart(root, new RoundedBoxGeometry(1.2, 0.34, 1.68, 4, 0.1), paint, "car-hood", 1.34, 0.91, 0);
+  addPart(root, new RoundedBoxGeometry(0.9, 0.3, 1.66, 4, 0.09), paint, "car-rear-deck", -1.56, 0.91, 0);
+  addPart(root, new RoundedBoxGeometry(2.0, 0.16, 1.43, 4, 0.11), paint, "car-roof", -0.22, 1.62, 0);
 
   for (const side of [-1, 1]) {
     addPart(root, new THREE.BoxGeometry(1.53, 0.47, 0.035), glass, "car-side-window", -0.2, 1.34, side * 0.735, false);
     addPart(root, new THREE.BoxGeometry(0.045, 0.52, 0.055), darkPaint, "car-window-pillar", -0.97, 1.34, side * 0.745);
-    addPart(root, new THREE.BoxGeometry(0.045, 0.52, 0.055), darkPaint, "car-window-pillar", 0.57, 1.34, side * 0.745);
-    addPart(root, new THREE.BoxGeometry(0.28, 0.08, 0.055), darkPaint, "car-door-handle", -0.15, 1.02, side * 0.87, false);
+    addPart(root, new RoundedBoxGeometry(0.045, 0.52, 0.055, 3, 0.012), darkPaint, "car-window-pillar", 0.57, 1.34, side * 0.745);
+    addPart(root, new RoundedBoxGeometry(0.28, 0.08, 0.055, 3, 0.02), darkPaint, "car-door-handle", -0.15, 1.02, side * 0.87, false);
+    addPart(root, new RoundedBoxGeometry(0.25, 0.1, 0.14, 4, 0.035), darkPaint,
+      "car-wing-mirror", 0.72, 1.32, side * 0.92);
   }
 
   addPart(root, new THREE.BoxGeometry(0.05, 0.46, 1.34), glass, "car-front-windshield", 0.79, 1.34, 0, false);
   addPart(root, new THREE.BoxGeometry(0.05, 0.42, 1.3), glass, "car-rear-window", -1.12, 1.34, 0, false);
-  addPart(root, new THREE.BoxGeometry(0.14, 0.17, 1.76), darkPaint, "car-front-bumper", 2.14, 0.53, 0);
-  addPart(root, new THREE.BoxGeometry(0.14, 0.17, 1.76), darkPaint, "car-rear-bumper", -2.19, 0.53, 0);
+  addPart(root, new RoundedBoxGeometry(0.14, 0.17, 1.76, 3, 0.045), darkPaint, "car-front-bumper", 2.14, 0.53, 0);
+  addPart(root, new RoundedBoxGeometry(0.14, 0.17, 1.76, 3, 0.045), darkPaint, "car-rear-bumper", -2.19, 0.53, 0);
+  addPart(root, new RoundedBoxGeometry(0.045, 0.145, 0.48, 3, 0.018), darkPaint, "car-front-grille", 2.205, 0.68, 0);
+  addPart(root, new RoundedBoxGeometry(0.035, 0.095, 0.34, 3, 0.012),
+    createMaterial(0xd0d1c8, { roughness: 0.72, metalness: 0.08 }), "car-front-plate", 2.225, 0.48, 0);
+  addPart(root, new RoundedBoxGeometry(0.035, 0.095, 0.34, 3, 0.012),
+    createMaterial(0xd0d1c8, { roughness: 0.72, metalness: 0.08 }), "car-rear-plate", -2.235, 0.48, 0);
 
   for (const side of [-1, 1]) {
     addPart(root, new THREE.BoxGeometry(0.055, 0.17, 0.25), headlamp, "car-headlamp", 2.11, 0.78, side * 0.57, false);
