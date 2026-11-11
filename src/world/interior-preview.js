@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { addWallWithOpenings, makeMaterial, makeSurfaceMaterial } from "./geometry.js";
 import { getHousePlan } from "./house-plans.js";
-import { addPlanPartitions, addRoomFurnishings } from "./house-plan-geometry.js";
+import { addPlanPartitions, addRoomFurnishings, addRoomFloorFinishes } from "./house-plan-geometry.js";
 
 /**
  * Non-interactive window view built from the exact same plan as the playable
@@ -140,6 +140,7 @@ export function buildWindowInteriorPreview({
     height: wallHeight,
     addTrim: false
   });
+  addRoomFloorFinishes({ group: room, plan, centerZ, frontSide });
   addRoomFurnishings({ group: room, plan, centerZ, frontSide });
 
   room.userData.planId = plan.id;
