@@ -104,7 +104,7 @@ test("house plans generate distinct room layouts and internal partition geometry
   const interiorB = buildHouseB();
 
   assert.deepEqual(planA.rooms.map(room => room.type), ["living", "kitchen", "bedroom", "bathroom"]);
-  assert.deepEqual(planB.rooms.map(room => room.type), ["living", "bedroom", "bathroom", "office"]);
+  assert.deepEqual(planB.rooms.map(room => room.type), ["living", "kitchen", "bedroom", "bathroom", "office"]);
   assert.notDeepEqual(planA.partitions, planB.partitions);
   assert.notEqual(planA.roof.pitch, planB.roof.pitch);
 
@@ -127,4 +127,5 @@ test("procedural interiors contain furniture appropriate to each room type", () 
   assert.ok(furnitureA.getObjectByName("bathroom-bath"));
   assert.ok(furnitureB.getObjectByName("living-sofa-base"));
   assert.ok(furnitureB.getObjectByName("office-desk"));
+  assert.ok(furnitureB.getObjectByName("kitchen-lower-cabinets"));
 });
