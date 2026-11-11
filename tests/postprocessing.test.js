@@ -8,6 +8,7 @@ test("GTAO uses denoised contact occlusion with mobile-aware sample counts", () 
   assert.ok(GTAO_TUNING.radius > 0 && GTAO_TUNING.radius < 1);
   assert.equal(GTAO_TUNING.samples, 8);
   assert.equal(GTAO_TUNING.denoiseSamples, 8);
+  assert.ok(GTAO_TUNING.resolutionScale > 0.5 && GTAO_TUNING.resolutionScale < 1);
 });
 
 test("postprocessing rejects an incomplete renderer setup", () => {
