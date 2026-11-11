@@ -6,6 +6,7 @@ const textureVariantCache = new Map();
 const liveSurfaceMaterials = new Set();
 const realTextureSources = new Map();
 const externalVariants = new Set();
+const externalVariantCache = new Map();
 const clamp01 = value => Math.max(0, Math.min(1, value));
 
 function hash2(x, y, seed = 0) {
@@ -260,6 +261,9 @@ function assetKeyForSurface(kind) {
 }
 
 function createExternalVariant(source, repeatU, repeatV, colorMap = false) {
+  const key = [source.uuid, repeatU, repeatV, colorMap ? "srgb" : "linear"].join(":");
+  const cached = externalVariantCache.get(key);
+  if (cached) return cached;
   const texture = source.clone();
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
@@ -271,6 +275,7 @@ function createExternalVariant(source, repeatU, repeatV, colorMap = false) {
   texture.anisotropy = 8;
   texture.needsUpdate = true;
   externalVariants.add(texture);
+  externalVariantCache.set(key, texture);
   return texture;
 }
 
@@ -318,18 +323,22 @@ export async function loadRealPbrMaterials({
   for (const [kind, entry] of Object.entries(manifest.textures)) {
     try {
       const sources = {};
-      for (const [mapName, record] of Object.entries(entry.maps || {})) {
-        if (!record?.url) continue;
-        const texture = await loader.loadAsync(record.url);
-        texture.colorSpace = mapName === "diffuse" ? THREE.SRGBColorSpace : THREE.NoColorSpace;
-        texture.wrapS = THREE.RepeatWrapping;
-        texture.wrapT = THREE.RepeatWrapping;
-        texture.magFilter = THREE.LinearFilter;
-        texture.minFilter = THREE.LinearMipmapLinearFilter;
-        texture.generateMipmaps = true;
-        texture.anisotropy = 8;
-        sources[mapName] = texture;
-      }
+      const loadedMaps = await Promise.all(
+        Object.entries(entry.maps || {})
+          .filter(([, record]) => Boolean(record?.url))
+          .map(async ([mapName, record]) => {
+            const texture = await loader.loadAsync(record.url);
+            texture.colorSpace = mapName === "diffuse" ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.magFilter = THREE.LinearFilter;
+            texture.minFilter = THREE.LinearMipmapLinearFilter;
+            texture.generateMipmaps = true;
+            texture.anisotropy = 8;
+            return [mapName, texture];
+          })
+      );
+      for (const [mapName, texture] of loadedMaps) sources[mapName] = texture;
       if (!sources.diffuse || !sources.normal || !sources.roughness) {
         throw new Error("required diffuse, normal or roughness map is missing");
       }
@@ -370,6 +379,7 @@ export function disposeSurfaceTextures() {
     material.userData.externalTextureVariants = [];
   }
   externalVariants.clear();
+  externalVariantCache.clear();
   realTextureSources.clear();
   liveSurfaceMaterials.clear();
   textureVariantCache.clear();
