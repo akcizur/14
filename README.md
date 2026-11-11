@@ -33,6 +33,21 @@ The surface material system provides tiling albedo, roughness, height and tangen
 
 The street layout uses fewer, more plausible pedestrian crossings while keeping vehicle and pedestrian routes linked to the same world plan.
 
+## Photographic materials and lighting
+
+The build fetches the following CC0 material sets from [Poly Haven](https://polyhaven.com): White Stucco 02, Asphalt 02, Brick Pavement 02, Concrete Floor 01, Roof Tiles and Wood Floor. The game loads their diffuse, OpenGL normal, roughness, AO and displacement maps locally from `public/assets/pbr/`; no asset requests are made from the browser to Poly Haven.
+
+The outdoor lighting uses the Poly Haven Kloofendal 48d Partly Cloudy HDRI for image-based lighting and reflections, together with a directional sun and hemisphere fill. A denoised Three.js GTAO pass adds real-time screen-space ambient occlusion around contact areas and corners. The scanned material AO maps remain available as a separate per-surface layer.
+
+Prepare assets locally with:
+
+```sh
+npm run assets:pbr
+npm run dev
+```
+
+GitHub Pages runs the same asset-fetch step before the production build. The texture sets and HDRI are CC0; see [CREDITS.md](CREDITS.md).
+
 ## Runtime systems
 
 - One renderer, camera, player controller and scene manager are shared between street and interiors.
