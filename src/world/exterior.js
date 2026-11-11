@@ -6,6 +6,7 @@ import { createGableRoofLayout } from "./roof-geometry.js";
 import { buildWindowInteriorPreview } from "./interior-preview.js";
 import { createTraffic } from "./traffic.js";
 import { createPedestrians } from "./pedestrians.js";
+import { buildResidentialStreetDetails } from "./streetscape.js";
 import { getHousePlan } from "./house-plans.js";
 import { WORLD_PLAN, assertWorldPlan } from "./world-plan.js";
 
@@ -360,18 +361,7 @@ export function buildExterior({
     interactables.push(house.interactable);
   }
 
-  const trunk = makeMaterial(0x665748);
-  const foliage = makeMaterial(0x536b55);
-  for (const tree of streetPlan.trees) {
-    addBox(group, colliders, "garden-tree-trunk",
-      tree.x, 0, tree.z, tree.trunkWidth ?? 0.34, tree.trunkHeight ?? 1.35,
-      tree.trunkDepth ?? 0.34, trunk, true);
-    const crown = new THREE.Mesh(new THREE.IcosahedronGeometry(tree.crownRadius ?? 1.25, 1), foliage);
-    crown.position.set(tree.x, tree.crownY ?? 2.0, tree.z);
-    crown.scale.set(1, tree.crownScaleY ?? 1.08, 1);
-    crown.castShadow = true;
-    group.add(crown);
-  }
+  buildResidentialStreetDetails({ group, worldPlan, buildings, colliders });
 
   const traffic = createTraffic({ colliders, trafficPlan: streetPlan.traffic });
   group.add(traffic.group);
