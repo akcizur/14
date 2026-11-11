@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { buildExterior } from "../src/world/exterior.js";
 import { buildHouseA } from "../src/interiors/house-a.js";
 import { buildHouseB } from "../src/interiors/house-b.js";
+import { createPlayerController } from "../src/core/player-controller.js";
 import * as THREE from "three";
 import { getHousePlan } from "../src/world/house-plans.js";
 
@@ -162,5 +163,26 @@ test("declared rooms remain within the footprint and do not overlap", () => {
         assert.ok(overlapX <= 1e-8 || overlapZ <= 1e-8, a.id + " overlaps " + b.id);
       }
     }
+  }
+});
+
+test("procedural house layouts keep the entrance spawn clear of all generated walls", () => {
+  const camera = {
+    position: { x: 0, y: 0, z: 0, set(x, y, z) { this.x = x; this.y = y; this.z = z; } },
+    rotation: { x: 0, y: 0, z: 0, order: "YXZ" }
+  };
+
+  for (const interior of [buildHouseA(), buildHouseB()]) {
+    const controller = createPlayerController({ camera });
+    controller.setWorld({
+      colliders: interior.colliders,
+      navigation: interior.navigation
+    });
+    assert.equal(controller.setSpawn(interior.spawn), true, interior.id + " entry spawn must remain clear");
+    assert.deepEqual(
+      controller.getBlockingCollidersAt(interior.spawn.x, interior.spawn.z),
+      [],
+      interior.id + " entry path should not intersect a partition"
+    );
   }
 });
