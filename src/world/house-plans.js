@@ -73,6 +73,7 @@ export const HOUSE_PLANS = deepFreeze({
     footprint: { width: 12, depth: 10 },
     wall: { height: 3.15, thickness: 0.26 },
     entry: BASE_ENTRY,
+    interiorDoor: INTERIOR_DOOR,
     roof: { type: "gable", pitch: 0.39, overhang: 0.95, sideOverhang: 0.42, color: 0x4b5355 },
     facade: {
       wallColor: 0xb4c0bb,
