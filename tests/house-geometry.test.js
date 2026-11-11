@@ -7,7 +7,7 @@ import { createPlayerController } from "../src/core/player-controller.js";
 import * as THREE from "three";
 import { getHousePlan } from "../src/world/house-plans.js";
 
-test("opposing houses share the same roof profile and complete roof edge detail", () => {
+test("the replacement bungalow has a four-plane hip roof, raised clerestory and integrated carport", () => {
   const street = buildExterior();
 
   for (const id of ["house-a", "house-b"]) {
@@ -28,6 +28,17 @@ test("opposing houses share the same roof profile and complete roof edge detail"
     assert.ok(street.group.getObjectByName(id + "-rear-gutter"));
     assert.ok(street.group.getObjectByName(id + "-front-downpipe-left"));
     assert.ok(street.group.getObjectByName(id + "-rear-downpipe-right"));
+    assert.ok(street.group.getObjectByName(id + "-roof-verge-left-south"));
+    assert.ok(street.group.getObjectByName(id + "-roof-verge-right-north"));
+    assert.ok(street.group.getObjectByName(id + "-clerestory-front-wall"));
+    assert.ok(street.group.getObjectByName(id + "-upper-roof-ridge-cap"));
+    assert.ok(street.group.getObjectByName(id + "-carport-roof"));
+    assert.equal(
+      street.group.children.filter(child => child.name.startsWith(id + "-carport-post-")).length,
+      4
+    );
+    assert.ok(street.group.getObjectByName(id + "-porch-canopy"));
+    assert.ok(street.group.getObjectByName(id + "-entry-step-2"));
   }
 });
 
