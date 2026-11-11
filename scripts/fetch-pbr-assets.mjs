@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PUBLIC = path.join(ROOT, "public", "assets");
 const UA = "14-Residential-World-PBR-Fetcher/1.0 (+https://github.com/akcizur/14)";
-const RESOLUTION = process.env.PBR_RESOLUTION || "2k";
+const RESOLUTION = process.env.PBR_RESOLUTION || "1k";
 
 const TEXTURES = [
   { kind: "plaster", id: "white_stucco_02" },
