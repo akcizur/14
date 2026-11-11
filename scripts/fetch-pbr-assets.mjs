@@ -90,7 +90,7 @@ async function fetchTexture({ kind, id }) {
     const target = path.join(directory, filename);
     const result = await download(selected.file.url, target, selected.file.md5);
     maps[key] = {
-      url: "/assets/pbr/" + kind + "/" + filename,
+      url: "assets/pbr/" + kind + "/" + filename,
       resolution: resolution.name,
       bytes: result.bytes
     };
@@ -121,7 +121,7 @@ async function fetchHdri() {
 
   return {
     id,
-    url: "/assets/lighting/" + id + "_" + variant.name + ".hdr",
+    url: "assets/lighting/" + id + "_" + variant.name + ".hdr",
     resolution: variant.name,
     license: "CC0",
     author: "Greg Zaal; Jarod Guest",
