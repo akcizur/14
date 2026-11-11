@@ -8,9 +8,17 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test"
+    "test": "node --test",
+    "assets:pbr": "node scripts/fetch-pbr-assets.mjs",
+    "assets": "npm run assets:pbr"
   },
-  "dependencies": { "three": "0.169.0" },
-  "devDependencies": { "vite": "6.4.5" },
-  "engines": { "node": ">=20.0.0" }
-}
+  "dependencies": {
+    "three": "0.169.0"
+  },
+  "devDependencies": {
+    "vite": "6.4.5"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}\n
