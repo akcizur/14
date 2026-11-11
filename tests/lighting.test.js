@@ -22,6 +22,8 @@ test("world lighting adds balanced ambient fill, directional sun and environment
   assert.ok(scene.children.includes(lighting.ambient));
   assert.ok(scene.children.includes(lighting.sun));
   assert.equal(lighting.sun.castShadow, true);
+  assert.ok(lighting.ambient.intensity > 0 && lighting.ambient.intensity < 1);
+  assert.ok(lighting.sun.intensity > 1);
   assert.equal(lighting.sun.shadow.mapSize.width, 2048);
 
   lighting.dispose();
