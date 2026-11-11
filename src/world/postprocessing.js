@@ -12,7 +12,8 @@ export const GTAO_TUNING = Object.freeze({
   samples: 8,
   screenSpaceRadius: true,
   denoiseRadius: 6,
-  denoiseSamples: 8
+  denoiseSamples: 8,
+  resolutionScale: 0.72
 });
 
 /**
@@ -29,10 +30,11 @@ export function createWorldPostProcessing(renderer, scene, camera) {
   let gtaoPass = null;
   let outputPass = null;
   let enabled = false;
+  const composerPixelRatio = Math.min(renderer.getPixelRatio(), 1.35);
 
   try {
     composer = new EffectComposer(renderer);
-    composer.setPixelRatio(Math.min(renderer.getPixelRatio(), 1.35));
+    composer.setPixelRatio(composerPixelRatio);
     composer.addPass(new RenderPass(scene, camera));
 
     gtaoPass = new GTAOPass(scene, camera, 512, 512);
@@ -74,7 +76,11 @@ export function createWorldPostProcessing(renderer, scene, camera) {
     get enabled() { return enabled; },
     gtaoPass,
     setSize(width, height) {
-      if (composer) composer.setSize(width, height);
+      if (!composer) return;
+      composer.setSize(width, height);
+      const aoWidth = Math.max(1, Math.round(width * composerPixelRatio * GTAO_TUNING.resolutionScale));
+      const aoHeight = Math.max(1, Math.round(height * composerPixelRatio * GTAO_TUNING.resolutionScale));
+      gtaoPass?.setSize(aoWidth, aoHeight);
     },
     render(deltaTime = 0) {
       if (composer) composer.render(deltaTime);
