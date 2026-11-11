@@ -234,7 +234,8 @@ export function addRoomFloorFinishes({ group, plan, centerZ, frontSide }) {
     const color = room.type === "bathroom" ? 0xc6c5bb : 0xb2aa98;
     const tile = makeSurfaceMaterial("ceramic", color, {
       roughness: 0.42,
-      bumpScale: 0.009
+      bumpScale: 0.009,
+      side: THREE.DoubleSide
     }, [2.1, 2.1]);
     const finish = new THREE.Mesh(
       new THREE.PlaneGeometry(Math.max(0.4, room.width - 0.16), Math.max(0.4, room.depth - 0.16)),
@@ -251,7 +252,8 @@ export function addRoomFloorFinishes({ group, plan, centerZ, frontSide }) {
   if (livingRoom) {
     const rug = makeSurfaceMaterial("fabric", 0x777b75, {
       roughness: 0.98,
-      bumpScale: 0.006
+      bumpScale: 0.006,
+      side: THREE.DoubleSide
     }, [1.4, 1.4]);
     const rugMesh = new THREE.Mesh(
       new THREE.PlaneGeometry(Math.min(2.8, livingRoom.width * 0.62), Math.min(1.8, livingRoom.depth * 0.38)),
