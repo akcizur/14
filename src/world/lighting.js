@@ -146,13 +146,26 @@ export function createWorldLighting(scene, renderer = null) {
   sun.target.position.set(0, 0, 0);
   scene.add(sun, sun.target);
 
+  let disposed = false;
   let hdriReady = Promise.resolve(false);
   if (renderer?.isWebGLRenderer) {
     pmremGenerator = new THREE.PMREMGenerator(renderer);
     pmremGenerator.compileEquirectangularShader();
-    hdriReady = new RGBELoader()
-      .loadAsync("/assets/lighting/kloofendal_48d_partly_cloudy_puresky_2k.hdr")
+    hdriReady = fetch("/assets/pbr/manifest.json", { cache: "force-cache" })
+      .then(response => {
+        if (!response.ok) throw new Error("PBR manifest unavailable: " + response.status);
+        return response.json();
+      })
+      .then(manifest => {
+        const url = manifest?.hdri?.url;
+        if (!url) throw new Error("The PBR manifest has no HDRI URL.");
+        return new RGBELoader().loadAsync(url);
+      })
       .then(texture => {
+        if (disposed) {
+          texture.dispose();
+          return false;
+        }
         hdriTexture = texture;
         hdriTexture.mapping = THREE.EquirectangularReflectionMapping;
         environmentTarget = pmremGenerator.fromEquirectangular(hdriTexture);
