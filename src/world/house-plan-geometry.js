@@ -217,3 +217,52 @@ export function addRoomFurnishings({ group, plan, centerZ, frontSide, colliders 
   }
   return root;
 }
+
+export function addRoomFloorFinishes({ group, plan, centerZ, frontSide }) {
+  if (!group || !plan || ![-1, 1].includes(frontSide) || !Number.isFinite(centerZ)) {
+    throw new TypeError("addRoomFloorFinishes requires a group, plan and orientation.");
+  }
+
+  const root = new THREE.Group();
+  root.name = plan.id + "-floor-finishes";
+  root.position.set(0, 0, centerZ);
+  root.scale.z = frontSide;
+  group.add(root);
+
+  for (const room of plan.rooms) {
+    if (room.type !== "kitchen" && room.type !== "bathroom") continue;
+    const color = room.type === "bathroom" ? 0xc6c5bb : 0xb2aa98;
+    const tile = makeSurfaceMaterial("ceramic", color, {
+      roughness: 0.42,
+      bumpScale: 0.009
+    }, [2.1, 2.1]);
+    const finish = new THREE.Mesh(
+      new THREE.PlaneGeometry(Math.max(0.4, room.width - 0.16), Math.max(0.4, room.depth - 0.16)),
+      tile
+    );
+    finish.name = plan.id + "-" + room.id + "-floor-finish";
+    finish.rotation.x = -Math.PI / 2;
+    finish.position.set(room.x, 0.016, room.z);
+    finish.receiveShadow = true;
+    root.add(finish);
+  }
+
+  const livingRoom = plan.rooms.find(room => room.type === "living");
+  if (livingRoom) {
+    const rug = makeSurfaceMaterial("fabric", 0x777b75, {
+      roughness: 0.98,
+      bumpScale: 0.006
+    }, [1.4, 1.4]);
+    const rugMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(Math.min(2.8, livingRoom.width * 0.62), Math.min(1.8, livingRoom.depth * 0.38)),
+      rug
+    );
+    rugMesh.name = plan.id + "-living-floor-rug";
+    rugMesh.rotation.x = -Math.PI / 2;
+    rugMesh.position.set(livingRoom.x, 0.022, livingRoom.z + 0.55);
+    rugMesh.receiveShadow = true;
+    root.add(rugMesh);
+  }
+
+  return root;
+}
