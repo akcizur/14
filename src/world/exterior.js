@@ -210,8 +210,8 @@ function buildHouse(group, colliders, config) {
     id,
     centerZ,
     frontSide,
-    wallColor: interiorWallColor ?? plan.finish.wallColor,
-    floorColor: interiorFloorColor ?? plan.finish.floorColor,
+    wallColor: plan.finish.wallColor,
+    floorColor: plan.finish.floorColor,
     planId,
     seed
   }));
