@@ -16,6 +16,11 @@ function addGableEnd(group, name, x, frontZ, rearZ, centerZ, wallHeight, ridgeY,
     x, wallHeight, frontZ,
     x, ridgeY, centerZ
   ], 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute([
+    0, 0,
+    1, 0,
+    0.5, 1
+  ], 2));
   geometry.computeVertexNormals();
 
   const gable = new THREE.Mesh(geometry, material);
