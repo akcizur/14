@@ -66,6 +66,15 @@ test("generated texture pixels stay in range and contain real surface variation"
   }
 });
 
+test("surface materials retain semantic PBR kind and tiling for scanned maps", () => {
+  const material = makeSurfaceMaterial("wood", 0x756b5b, { bumpScale: 0.018 }, [3.5, 1.4]);
+  assert.equal(material.userData.surfaceKind, "wood");
+  assert.deepEqual(material.userData.surfaceRepeat, [3.5, 1.4]);
+  assert.equal(material.userData.surfaceBumpScale, 0.018);
+  assert.equal(material.userData.realPbr, undefined);
+  material.dispose();
+});
+
 test("texture cache can be released without depending on a browser canvas", () => {
   getSurfaceMaps("concrete");
   assert.doesNotThrow(() => disposeSurfaceTextures());
