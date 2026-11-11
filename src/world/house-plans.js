@@ -55,9 +55,9 @@ export const HOUSE_PLANS = Object.freeze({
     rooms: Object.freeze([
       { id: "living", name: "Obývací pokoj", type: "living", x: -2.75, z: 2.5, width: 6.0, depth: 5 },
       { id: "kitchen", name: "Kuchyně", type: "kitchen", x: 3.2, z: 2.5, width: 5.4, depth: 5 },
-      { id: "bedroom", name: "Ložnice", type: "bedroom", x: -3.8, z: -2.5, width: 4.4, depth: 5 },
-      { id: "bathroom", name: "Koupelna", type: "bathroom", x: 0.7, z: -2.5, width: 4.0, depth: 5 },
-      { id: "office", name: "Pracovna", type: "office", x: 4.0, z: -2.5, width: 4.0, depth: 5 }
+      { id: "bedroom", name: "Ložnice", type: "bedroom", x: -3.775, z: -2.5, width: 4.45, depth: 5 },
+      { id: "bathroom", name: "Koupelna", type: "bathroom", x: 0.575, z: -2.5, width: 4.25, depth: 5 },
+      { id: "office", name: "Pracovna", type: "office", x: 4.35, z: -2.5, width: 3.3, depth: 5 }
     ]),
     partitions: Object.freeze([
       { id: "rear-divider-left", axis: "z", at: 0, from: -6, to: -1.55, openings: [{ at: -3.8, width: 0.94 }] },

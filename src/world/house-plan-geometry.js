@@ -157,7 +157,7 @@ export function addRoomFurnishings({ group, plan, centerZ, frontSide }) {
       addFurnitureBox(root, room.id + "-pillow-left", bedX - 0.42, 0.51, z + 0.72, 0.66, 0.13, 0.42, m.ceramic);
       addFurnitureBox(root, room.id + "-pillow-right", bedX + 0.42, 0.51, z + 0.72, 0.66, 0.13, 0.42, m.ceramic);
       addFurnitureBox(root, room.id + "-headboard", bedX, 0.58, z + 1.18, 1.85, 0.9, 0.12, m.wood);
-      addFurnitureBox(root, room.id + "-wardrobe", x - room.width * 0.36, 0, z - 1.45, 1.35, 2.2, 0.62, m.wood);
+      addFurnitureBox(root, room.id + "-wardrobe", x - room.width * 0.32, 0, z - 1.45, 1.35, 2.2, 0.62, m.wood);
       addFurnitureBox(root, room.id + "-nightstand", bedX + 1.2, 0, z + 0.72, 0.48, 0.58, 0.48, m.wood);
     }
 

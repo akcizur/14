@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { buildExterior } from "../src/world/exterior.js";
 import { buildHouseA } from "../src/interiors/house-a.js";
 import { buildHouseB } from "../src/interiors/house-b.js";
+import * as THREE from "three";
 import { getHousePlan } from "../src/world/house-plans.js";
 
 test("opposing houses share the same roof profile and complete roof edge detail", () => {
@@ -128,4 +129,38 @@ test("procedural interiors contain furniture appropriate to each room type", () 
   assert.ok(furnitureB.getObjectByName("living-sofa-base"));
   assert.ok(furnitureB.getObjectByName("office-desk"));
   assert.ok(furnitureB.getObjectByName("kitchen-lower-cabinets"));
+
+  furnitureB.updateMatrixWorld(true);
+  const worldCouch = new THREE.Vector3();
+  furnitureB.getObjectByName("living-sofa-base").getWorldPosition(worldCouch);
+  assert.ok(Math.abs(worldCouch.x - (-2.75)) < 1e-9);
+  assert.ok(Math.abs(worldCouch.z - (17 - 1.8)) < 1e-9);
+});
+
+test("declared rooms remain within the footprint and do not overlap", () => {
+  for (const id of ["houseA", "houseB"]) {
+    const plan = getHousePlan(id);
+    const bounds = {
+      minX: -plan.footprint.width / 2,
+      maxX: plan.footprint.width / 2,
+      minZ: -plan.footprint.depth / 2,
+      maxZ: plan.footprint.depth / 2
+    };
+    for (const room of plan.rooms) {
+      assert.ok(room.x - room.width / 2 >= bounds.minX - 1e-8, room.id + " extends past left wall");
+      assert.ok(room.x + room.width / 2 <= bounds.maxX + 1e-8, room.id + " extends past right wall");
+      assert.ok(room.z - room.depth / 2 >= bounds.minZ - 1e-8, room.id + " extends past rear wall");
+      assert.ok(room.z + room.depth / 2 <= bounds.maxZ + 1e-8, room.id + " extends past front wall");
+    }
+    for (let left = 0; left < plan.rooms.length; left += 1) {
+      for (let right = left + 1; right < plan.rooms.length; right += 1) {
+        const a = plan.rooms[left], b = plan.rooms[right];
+        const overlapX = Math.min(a.x + a.width / 2, b.x + b.width / 2)
+          - Math.max(a.x - a.width / 2, b.x - b.width / 2);
+        const overlapZ = Math.min(a.z + a.depth / 2, b.z + b.depth / 2)
+          - Math.max(a.z - a.depth / 2, b.z - b.depth / 2);
+        assert.ok(overlapX <= 1e-8 || overlapZ <= 1e-8, a.id + " overlaps " + b.id);
+      }
+    }
+  }
 });
