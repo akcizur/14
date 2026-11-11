@@ -28,6 +28,8 @@ jobs:
         run: npm install
       - name: Run tests
         run: npm test
+      - name: Fetch Poly Haven PBR and HDRI assets
+        run: npm run assets:pbr
       - name: Build
         run: npm run build
       - name: Configure Pages
