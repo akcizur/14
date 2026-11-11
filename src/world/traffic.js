@@ -1,9 +1,9 @@
 import * as THREE from "three";
+import { WORLD_PLAN } from "./world-plan.js";
 
-const ROAD_EDGE = 32;
-const LANE_OFFSET = 1.82;
-const CAR_LENGTH = 4.5;
-const TRUCK_LENGTH = 7.9;
+const DEFAULT_TRAFFIC_PLAN = WORLD_PLAN.street.traffic;
+const CAR_LENGTH = DEFAULT_TRAFFIC_PLAN.carLength;
+const TRUCK_LENGTH = DEFAULT_TRAFFIC_PLAN.truckLength;
 
 const CAR_COLORS = [0x87918e, 0x65737a, 0xb5ad9d, 0x747f70, 0x454e50, 0x9a9b91];
 const TRUCK_COLORS = [0xb8b8ad, 0x8a9694, 0xa49a85, 0x727e80];
@@ -188,18 +188,24 @@ function disposeVehicle(root) {
  * Dynamic collider objects are added to the street collider array by reference,
  * so the first-person controller sees their current world-space positions.
  */
-export function createTraffic({ colliders = [], random = Math.random } = {}) {
+export function createTraffic({
+  colliders = [],
+  random = Math.random,
+  trafficPlan = DEFAULT_TRAFFIC_PLAN
+} = {}) {
   if (!Array.isArray(colliders) || typeof random !== "function") {
     throw new TypeError("createTraffic requires a collider array and a random function.");
   }
 
+  const roadEdge = trafficPlan.roadEdge;
+  const laneOffset = trafficPlan.laneOffset;
   const group = new THREE.Group();
   group.name = "street-traffic";
   const vehicles = [];
   const crossingReservations = [];
   const lanes = [
-    { id: "northbound", z: -LANE_OFFSET, direction: 1, nextSpawn: randomBetween(random, 2.1, 3.7) },
-    { id: "southbound", z: LANE_OFFSET, direction: -1, nextSpawn: randomBetween(random, 2.4, 4.0) }
+    { id: "northbound", z: -laneOffset, direction: 1, nextSpawn: randomBetween(random, 2.1, 3.7) },
+    { id: "southbound", z: laneOffset, direction: -1, nextSpawn: randomBetween(random, 2.4, 4.0) }
   ];
   let disposed = false;
 
@@ -259,8 +265,8 @@ export function createTraffic({ colliders = [], random = Math.random } = {}) {
     const type = unitRandom(random) < 0.22 ? "truck" : "car";
     const halfLength = (type === "truck" ? TRUCK_LENGTH : CAR_LENGTH) / 2;
     const x = lane.direction > 0
-      ? -ROAD_EDGE - halfLength - 3
-      : ROAD_EDGE + halfLength + 3;
+      ? -roadEdge - halfLength - 3
+      : roadEdge + halfLength + 3;
     const sameLane = vehicles.filter(vehicle => vehicle.lane === lane);
 
     if (sameLane.length) {
@@ -274,7 +280,7 @@ export function createTraffic({ colliders = [], random = Math.random } = {}) {
         ? nearest.root.position.x - nearest.length / 2 - (x + halfLength)
         : (x - halfLength) - (nearest.root.position.x + nearest.length / 2);
 
-      if (gap < 7.5) {
+      if (gap < trafficPlan.spawnGap) {
         scheduleNext(lane, 0.65, 1.15);
         return false;
       }
@@ -318,7 +324,7 @@ export function createTraffic({ colliders = [], random = Math.random } = {}) {
       const gap = lane.direction > 0
         ? leader.root.position.x - leader.length / 2 - (follower.root.position.x + follower.length / 2)
         : (follower.root.position.x - follower.length / 2) - (leader.root.position.x + leader.length / 2);
-      const requiredGap = (leader.length + follower.length) / 2 + 3.6;
+      const requiredGap = (leader.length + follower.length) / 2 + trafficPlan.followingGap;
 
       if (gap < requiredGap + 5) {
         const safeSpeed = leader.speed + (gap - requiredGap) * 0.82;
@@ -345,7 +351,7 @@ export function createTraffic({ colliders = [], random = Math.random } = {}) {
         const distanceToStopLine =
           (crossing.x - vehicle.root.position.x) * vehicle.lane.direction
           - vehicle.length / 2 - 1.5;
-        if (distanceToStopLine >= 0 && distanceToStopLine < 24) {
+        if (distanceToStopLine >= 0 && distanceToStopLine < trafficPlan.crossingLookAhead) {
           const safeSpeed = Math.sqrt(2 * 4.8 * Math.max(0, distanceToStopLine - 1));
           targetSpeed = Math.min(targetSpeed, safeSpeed);
         }
@@ -364,8 +370,8 @@ export function createTraffic({ colliders = [], random = Math.random } = {}) {
 
       const x = vehicle.root.position.x;
       const cleared = vehicle.lane.direction > 0
-        ? x - vehicle.length / 2 > ROAD_EDGE + 2
-        : x + vehicle.length / 2 < -ROAD_EDGE - 2;
+        ? x - vehicle.length / 2 > roadEdge + 2
+        : x + vehicle.length / 2 < -roadEdge - 2;
       if (cleared) removeVehicle(index);
     }
   }

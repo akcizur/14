@@ -1,59 +1,40 @@
-# 14 — Two-house FPS world
+# 14 — Procedural residential world
 
-A small first-person Three.js environment built around one street, two opposing houses and two empty interiors.
+A low-poly first-person Three.js environment with two playable houses, a residential street, traffic and pedestrians.
 
-## Current world
+## Unified world model
 
-- One short residential street with sidewalks and two houses facing each other.
-- House A and House B each have a separate empty interior, with matching front and rear window positions.
-- Front doors rotate inward around a hinge pivot; interior exit doors swing outward toward the street.
-- Window openings are modeled in the walls and backed by glazing colliders, so the glass remains visible and solid.
-- Both roofs use matching gable geometry with aligned ridge caps, verge boards and eaves.
-- Static, non-interactive interior previews sit behind the exterior glazing and match each playable room's dimensions, wall finish, floor finish and rear window positions.
-- Entry and exit use paired, house-specific spawn points.
-- The player enters facing into the room and exits facing away from the facade toward the street.
-- Scene transitions use a short fade and preserve the exact source position if a destination spawn is invalid.
-- One shared camera, renderer, FPS controller and input layer are used across all locations.
-- Each location owns its own colliders, interaction points and navigation bounds.
-- Street trees have solid trunk collision; the player no longer walks through their bases.
-- The welcome screen explains the controls before play, and the pause screen restores mouse capture when resumed.
-- Nearby doors are signaled by both the interaction hint and a highlighted reticle.
+`src/world/world-plan.js` is the canonical spatial source of truth. Its measurements are in metres and define the road, sidewalks, crosswalks, traffic lanes, pedestrian routes, vegetation, navigation bounds and house sites.
 
-Interiors are intentionally unfurnished. They currently contain only the floor, walls, ceiling, windows, lighting and door opening.
+The world is built from that model. Street geometry, traffic and pedestrian systems receive the same dimensions instead of maintaining separate coordinate constants.
 
-## Run
+## Procedural houses
 
-Requirements: Node.js 20 or newer.
+`src/world/house-plans.js` contains two house archetypes and a deterministic seed-based generator:
 
-~~~sh
-npm install
-npm run dev
-~~~
+- `central-hall`: four rooms arranged around a central circulation hall.
+- `five-room`: open living/kitchen zone with a three-room rear wing.
 
-Run controller tests and build the static site:
+A seed determines room dimensions, partition positions, window placement, roof profile and material palette. The same seed is passed to the exterior shell, window preview and playable interior, so they always describe the same building.
 
-~~~sh
-npm test
-npm run build
-npm run preview
-~~~
+Every generated plan is validated before geometry is created. Validation checks footprint bounds, room overlap, partition ranges, door openings, facade windows and entrance dimensions.
 
-## Controls
+## Derived geometry and physics
 
-| Input | Action |
-| --- | --- |
-| W / A / S / D or arrows | Move |
-| Shift | Sprint |
-| Space | Jump |
-| Mouse | Look (click the world to capture the pointer) |
-| E | Enter / leave a house |
-| Escape / Enter | Start, pause / resume |
-| Touch | Left joystick to move, drag right side to look, action buttons |
-| Gamepad | Left stick move, right stick look, A jump, X interact, triggers sprint, Start / B pause |
+The building plan drives the exterior walls, real wall openings, frames, roof, eaves, gutters, entrance, interior partitions, window preview, room furnishings, door spawns and navigation bounds.
 
-## Scene architecture
+Large furniture pieces create matching player collision volumes. Window previews are visual-only and never add collision. Door dimensions and spawn distances come from the same entrance definition.
 
-~~~text
+## Runtime systems
+
+- One renderer, camera, player controller and scene manager are shared between street and interiors.
+- Traffic reads its road edge and lane spacing from the street plan.
+- Pedestrians read sidewalk lines, crossing locations, benches and spawn points from the same plan.
+- Door transitions retain the route-aligned threshold crossing and swap collision worlds at the doorway.
+
+## Project structure
+
+```text
 src/
   core/
     input-controller.js
@@ -62,21 +43,32 @@ src/
     door-spawns.js
     scene-manager.js
   world/
+    world-plan.js
+    house-plans.js
+    house-plan-geometry.js
     exterior.js
-    geometry.js
-    roof-geometry.js
     interior-builder.js
+    interior-preview.js
+    roof-geometry.js
+    traffic.js
+    pedestrians.js
     interactions/
       door-transition.js
   interiors/
     house-a.js
     house-b.js
-~~~
+tests/
+```
 
-Touch joystick and gamepad analogue input are kept as independent sources and combined safely; gamepad pause works in both directions and look speed is time-based. Navigation bounds include the player's collision radius.
+## Run and verify
 
-The SceneManager switches location visibility and world data without recreating the renderer, camera or player controller. The player controller accepts new colliders, interactables and navigation bounds through setWorld(). Door spawn orientation is centralized in door-spawns.js so both opposing houses use the same in/out rules.
+Requirements: Node.js 20 or newer.
 
-## Deployment
+```sh
+npm install
+npm run dev
+npm test
+npm run build
+```
 
-The repository is configured for GitHub Pages through .github/workflows/pages.yml. The test suite covers player movement, collision boundaries, door swing direction, scene transitions, roof profiles, wall openings and input-source arbitration.
+GitHub Pages deploys from `main` after the test suite and production build succeed.

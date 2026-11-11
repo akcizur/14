@@ -83,7 +83,15 @@ export function addPlanPartitions({
   }
 }
 
-function addFurnitureBox(group, name, x, y, z, width, height, depth, mat, rotationY = 0) {
+const COLLIDABLE_FURNITURE = new Set([
+  "living-sofa-base", "living-coffee-table", "living-media-console",
+  "kitchen-lower-cabinets", "kitchen-fridge",
+  "bedroom-bed-frame", "bedroom-wardrobe",
+  "bathroom-bath", "bathroom-vanity", "bathroom-toilet-base",
+  "office-desk", "office-bookshelf"
+]);
+
+function addFurnitureBox(group, name, x, y, z, width, height, depth, mat, rotationY = 0, colliders = null, collisionContext = null) {
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), mat);
   mesh.name = name;
   mesh.position.set(x, y + height / 2, z);
@@ -91,6 +99,23 @@ function addFurnitureBox(group, name, x, y, z, width, height, depth, mat, rotati
   mesh.castShadow = true;
   mesh.receiveShadow = true;
   group.add(mesh);
+
+  if (colliders && collisionContext && COLLIDABLE_FURNITURE.has(name)) {
+    const cosine = Math.abs(Math.cos(rotationY));
+    const sine = Math.abs(Math.sin(rotationY));
+    const radiusX = (width * cosine + depth * sine) / 2;
+    const radiusZ = (width * sine + depth * cosine) / 2;
+    const worldZ = collisionContext.centerZ + collisionContext.frontSide * z;
+    colliders.push({
+      name: name + "-collider",
+      source: name,
+      minX: x - radiusX,
+      maxX: x + radiusX,
+      minZ: worldZ - radiusZ,
+      maxZ: worldZ + radiusZ,
+      enabled: true
+    });
+  }
   return mesh;
 }
 
@@ -108,7 +133,7 @@ function makeRoomMaterials() {
   };
 }
 
-export function addRoomFurnishings({ group, plan, centerZ, frontSide }) {
+export function addRoomFurnishings({ group, plan, centerZ, frontSide, colliders = null }) {
   if (!group || !plan || ![-1, 1].includes(frontSide) || !Number.isFinite(centerZ)) {
     throw new TypeError("addRoomFurnishings requires a group, plan and orientation.");
   }
@@ -120,63 +145,67 @@ export function addRoomFurnishings({ group, plan, centerZ, frontSide }) {
   root.scale.z = frontSide;
   group.add(root);
   const m = makeRoomMaterials();
+  const addFurniture = (...args) => {
+    const rotationY = typeof args[8] === "number" ? args[8] : 0;
+    return addFurnitureBox(root, ...args.slice(0, 8), rotationY, colliders, { centerZ, frontSide });
+  };
 
   for (const room of plan.rooms) {
     const x = room.x;
     const z = room.z;
 
     if (room.type === "living") {
-      addFurnitureBox(root, room.id + "-sofa-base", x, 0.32, z - 0.7, 2.25, 0.42, 0.86, m.upholstery);
-      addFurnitureBox(root, room.id + "-sofa-back", x, 0.65, z - 1.07, 2.25, 0.75, 0.16, m.upholstery);
+      addFurniture(room.id + "-sofa-base", x, 0.32, z - 0.7, 2.25, 0.42, 0.86, m.upholstery);
+      addFurniture(room.id + "-sofa-back", x, 0.65, z - 1.07, 2.25, 0.75, 0.16, m.upholstery);
       for (const side of [-1, 1]) {
-        addFurnitureBox(root, room.id + "-sofa-arm", x + side * 1.04, 0.56, z - 0.7, 0.16, 0.58, 0.86, m.upholstery);
+        addFurniture(room.id + "-sofa-arm", x + side * 1.04, 0.56, z - 0.7, 0.16, 0.58, 0.86, m.upholstery);
       }
-      addFurnitureBox(root, room.id + "-coffee-table", x, 0.39, z + 0.72, 1.1, 0.12, 0.64, m.wood);
+      addFurniture(room.id + "-coffee-table", x, 0.39, z + 0.72, 1.1, 0.12, 0.64, m.wood);
       for (const legX of [-0.43, 0.43]) for (const legZ of [-0.22, 0.22]) {
-        addFurnitureBox(root, room.id + "-coffee-table-leg", x + legX, 0, z + 0.72 + legZ, 0.055, 0.38, 0.055, m.darkWood);
+        addFurniture(room.id + "-coffee-table-leg", x + legX, 0, z + 0.72 + legZ, 0.055, 0.38, 0.055, m.darkWood);
       }
-      addFurnitureBox(root, room.id + "-media-console", x, 0.28, z - room.depth * 0.42, 1.8, 0.5, 0.34, m.wood);
-      addFurnitureBox(root, room.id + "-television", x, 1.05, z - room.depth * 0.42 + 0.19, 1.35, 0.82, 0.07, m.dark);
+      addFurniture(room.id + "-media-console", x, 0.28, z - room.depth * 0.42, 1.8, 0.5, 0.34, m.wood);
+      addFurniture(room.id + "-television", x, 1.05, z - room.depth * 0.42 + 0.19, 1.35, 0.82, 0.07, m.dark);
     }
 
     if (room.type === "kitchen") {
       const counterX = x + room.width * 0.27;
       const counterLength = Math.min(3.1, room.depth * 0.7);
-      addFurnitureBox(root, room.id + "-lower-cabinets", counterX, 0, z - 0.1, 0.62, 0.88, counterLength, m.cabinet);
-      addFurnitureBox(root, room.id + "-countertop", counterX, 0.88, z - 0.1, 0.72, 0.08, counterLength + 0.08, m.darkWood);
-      addFurnitureBox(root, room.id + "-upper-cabinets", counterX, 1.48, z - 0.1, 0.43, 0.72, counterLength, m.cabinet);
-      addFurnitureBox(root, room.id + "-fridge", x - room.width * 0.28, 0, z - 1.45, 0.78, 1.95, 0.78, m.ceramic);
-      addFurnitureBox(root, room.id + "-sink", counterX, 0.97, z + 0.6, 0.42, 0.035, 0.52, m.metal);
-      addFurnitureBox(root, room.id + "-stove", counterX, 0.98, z - 0.9, 0.52, 0.035, 0.62, m.dark);
+      addFurniture(room.id + "-lower-cabinets", counterX, 0, z - 0.1, 0.62, 0.88, counterLength, m.cabinet);
+      addFurniture(room.id + "-countertop", counterX, 0.88, z - 0.1, 0.72, 0.08, counterLength + 0.08, m.darkWood);
+      addFurniture(room.id + "-upper-cabinets", counterX, 1.48, z - 0.1, 0.43, 0.72, counterLength, m.cabinet);
+      addFurniture(room.id + "-fridge", x - room.width * 0.28, 0, z - 1.45, 0.78, 1.95, 0.78, m.ceramic);
+      addFurniture(room.id + "-sink", counterX, 0.97, z + 0.6, 0.42, 0.035, 0.52, m.metal);
+      addFurniture(room.id + "-stove", counterX, 0.98, z - 0.9, 0.52, 0.035, 0.62, m.dark);
     }
 
     if (room.type === "bedroom") {
       const bedX = x + room.width * 0.1;
-      addFurnitureBox(root, room.id + "-bed-frame", bedX, 0.18, z, 1.75, 0.36, 2.25, m.darkWood);
-      addFurnitureBox(root, room.id + "-mattress", bedX, 0.39, z, 1.64, 0.18, 2.12, m.fabric);
-      addFurnitureBox(root, room.id + "-pillow-left", bedX - 0.42, 0.51, z + 0.72, 0.66, 0.13, 0.42, m.ceramic);
-      addFurnitureBox(root, room.id + "-pillow-right", bedX + 0.42, 0.51, z + 0.72, 0.66, 0.13, 0.42, m.ceramic);
-      addFurnitureBox(root, room.id + "-headboard", bedX, 0.58, z + 1.18, 1.85, 0.9, 0.12, m.wood);
-      addFurnitureBox(root, room.id + "-wardrobe", x - room.width * 0.32, 0, z - 1.45, 1.35, 2.2, 0.62, m.wood);
-      addFurnitureBox(root, room.id + "-nightstand", bedX + 1.2, 0, z + 0.72, 0.48, 0.58, 0.48, m.wood);
+      addFurniture(room.id + "-bed-frame", bedX, 0.18, z, 1.75, 0.36, 2.25, m.darkWood);
+      addFurniture(room.id + "-mattress", bedX, 0.39, z, 1.64, 0.18, 2.12, m.fabric);
+      addFurniture(room.id + "-pillow-left", bedX - 0.42, 0.51, z + 0.72, 0.66, 0.13, 0.42, m.ceramic);
+      addFurniture(room.id + "-pillow-right", bedX + 0.42, 0.51, z + 0.72, 0.66, 0.13, 0.42, m.ceramic);
+      addFurniture(room.id + "-headboard", bedX, 0.58, z + 1.18, 1.85, 0.9, 0.12, m.wood);
+      addFurniture(room.id + "-wardrobe", x - room.width * 0.32, 0, z - 1.45, 1.35, 2.2, 0.62, m.wood);
+      addFurniture(room.id + "-nightstand", bedX + 1.2, 0, z + 0.72, 0.48, 0.58, 0.48, m.wood);
     }
 
     if (room.type === "bathroom") {
-      addFurnitureBox(root, room.id + "-bath", x + room.width * 0.28, 0.08, z - 1.25, 1.15, 0.38, 1.95, m.ceramic);
-      addFurnitureBox(root, room.id + "-vanity", x - room.width * 0.25, 0, z - 1.15, 0.9, 0.82, 0.52, m.wood);
-      addFurnitureBox(root, room.id + "-washbasin", x - room.width * 0.25, 0.84, z - 1.15, 0.88, 0.08, 0.56, m.ceramic);
-      addFurnitureBox(root, room.id + "-mirror", x - room.width * 0.25, 1.15, z - 1.43, 0.65, 0.72, 0.045, m.glass);
-      addFurnitureBox(root, room.id + "-toilet-base", x + room.width * 0.25, 0, z + 1.25, 0.48, 0.42, 0.64, m.ceramic);
-      addFurnitureBox(root, room.id + "-toilet-tank", x + room.width * 0.25, 0.42, z + 0.98, 0.44, 0.72, 0.22, m.ceramic);
+      addFurniture(room.id + "-bath", x + room.width * 0.28, 0.08, z - 1.25, 1.15, 0.38, 1.95, m.ceramic);
+      addFurniture(room.id + "-vanity", x - room.width * 0.25, 0, z - 1.15, 0.9, 0.82, 0.52, m.wood);
+      addFurniture(room.id + "-washbasin", x - room.width * 0.25, 0.84, z - 1.15, 0.88, 0.08, 0.56, m.ceramic);
+      addFurniture(room.id + "-mirror", x - room.width * 0.25, 1.15, z - 1.43, 0.65, 0.72, 0.045, m.glass);
+      addFurniture(room.id + "-toilet-base", x + room.width * 0.25, 0, z + 1.25, 0.48, 0.42, 0.64, m.ceramic);
+      addFurniture(room.id + "-toilet-tank", x + room.width * 0.25, 0.42, z + 0.98, 0.44, 0.72, 0.22, m.ceramic);
     }
 
     if (room.type === "office") {
-      addFurnitureBox(root, room.id + "-desk", x, 0.73, z - 1.45, 1.9, 0.12, 0.72, m.wood);
-      addFurnitureBox(root, room.id + "-desk-side", x - 0.72, 0, z - 1.45, 0.1, 0.72, 0.1, m.darkWood);
-      addFurnitureBox(root, room.id + "-desk-side", x + 0.72, 0, z - 1.45, 0.1, 0.72, 0.1, m.darkWood);
-      addFurnitureBox(root, room.id + "-chair-seat", x, 0.48, z - 0.45, 0.58, 0.1, 0.58, m.upholstery);
-      addFurnitureBox(root, room.id + "-chair-back", x, 0.9, z - 0.7, 0.58, 0.78, 0.12, m.upholstery);
-      addFurnitureBox(root, room.id + "-bookshelf", x + room.width * 0.34, 0, z + 1.3, 0.42, 1.9, 1.25, m.wood);
+      addFurniture(room.id + "-desk", x, 0.73, z - 1.45, 1.9, 0.12, 0.72, m.wood);
+      addFurniture(room.id + "-desk-side", x - 0.72, 0, z - 1.45, 0.1, 0.72, 0.1, m.darkWood);
+      addFurniture(room.id + "-desk-side", x + 0.72, 0, z - 1.45, 0.1, 0.72, 0.1, m.darkWood);
+      addFurniture(room.id + "-chair-seat", x, 0.48, z - 0.45, 0.58, 0.1, 0.58, m.upholstery);
+      addFurniture(room.id + "-chair-back", x, 0.9, z - 0.7, 0.58, 0.78, 0.12, m.upholstery);
+      addFurniture(room.id + "-bookshelf", x + room.width * 0.34, 0, z + 1.3, 0.42, 1.9, 1.25, m.wood);
     }
   }
   return root;

@@ -6,6 +6,7 @@ import { buildExterior } from "./world/exterior.js";
 import { buildHouseA } from "./interiors/house-a.js";
 import { buildHouseB } from "./interiors/house-b.js";
 import { SceneManager } from "./scenes/scene-manager.js";
+import { WORLD_PLAN } from "./world/world-plan.js";
 
 const mount = document.getElementById("game");
 const coordinates = document.getElementById("coordinates");
@@ -75,9 +76,9 @@ const controller = createPlayerController({ camera, state, ui: { showToast } });
 const transitionTo = (target, sourceDoor, targetSpawn) =>
   sceneManager.transition(target, sourceDoor, targetSpawn);
 
-const exterior = buildExterior({ onDoorInteract: transitionTo });
-const houseA = buildHouseA({ onExit: transitionTo });
-const houseB = buildHouseB({ onExit: transitionTo });
+const exterior = buildExterior({ onDoorInteract: transitionTo, generatedHouses: true });
+const houseA = buildHouseA({ onExit: transitionTo, seed: WORLD_PLAN.houses.find(site => site.planId === "houseA").seed });
+const houseB = buildHouseB({ onExit: transitionTo, seed: WORLD_PLAN.houses.find(site => site.planId === "houseB").seed });
 
 sceneManager = new SceneManager({
   root: scene,

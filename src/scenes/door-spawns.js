@@ -6,7 +6,7 @@ export function createDoorSpawns({
   outsideDistance = 1.8,
   insideDistance = 1.6
 }) {
-  if (!Number.isFinite(doorZ) || ![-1, 1].includes(frontSide)) {
+  if (![doorX, doorZ].every(Number.isFinite) || ![-1, 1].includes(frontSide)) {
     throw new TypeError("createDoorSpawns requires doorZ and frontSide (-1 or 1).");
   }
   if (![outsideDistance, insideDistance].every(Number.isFinite)

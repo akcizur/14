@@ -1,8 +1,7 @@
 import * as THREE from "three";
+import { WORLD_PLAN } from "./world-plan.js";
 
-const ROAD_EDGE = 32;
-const SIDEWALK_WALK_Z = 4.9;
-const CROSSWALKS = [-24, -12, 12, 24];
+const DEFAULT_PEDESTRIAN_PLAN = WORLD_PLAN.street.pedestrians;
 const SHIRTS = [0x687b78, 0x9a806e, 0x68718b, 0xb4a68f, 0x566b61, 0x8c6460, 0x858a87];
 const TROUSERS = [0x343d42, 0x4f5150, 0x62645c, 0x454c57, 0x69665e];
 const SKIN = [0xd5ab8e, 0xb9876e, 0x9e705c, 0xe2bd9d, 0xc99778];
@@ -191,12 +190,16 @@ export function createPedestrians({
   colliders = [],
   traffic = null,
   houses = [],
-  random = Math.random
+  random = Math.random,
+  pedestrianPlan = DEFAULT_PEDESTRIAN_PLAN
 } = {}) {
   if (!Array.isArray(colliders) || !Array.isArray(houses) || typeof random !== "function") {
     throw new TypeError("createPedestrians requires collider and house arrays and a random function.");
   }
 
+  const roadEdge = pedestrianPlan.roadEdge;
+  const sidewalkWalkZ = pedestrianPlan.walkZ;
+  const crosswalks = pedestrianPlan.crosswalkXs;
   const group = new THREE.Group();
   group.name = "street-pedestrians";
   const walkers = [];
@@ -205,10 +208,7 @@ export function createPedestrians({
   const benches = [];
   let disposed = false;
 
-  for (const [x, z, facingZ] of [
-    [-18, -5.68, 1],
-    [18, 5.68, -1]
-  ]) {
+  for (const { x, z, facingZ } of pedestrianPlan.benches) {
     const bench = createBench(group, colliders, x, z, facingZ);
     benches.push(bench);
     const sitter = createSeatedPerson(random);
@@ -288,7 +288,7 @@ export function createPedestrians({
         house.busy = false;
         house.reservedBy = null;
         agent.house = null;
-        const sidewalkZ = house.sidewalkSide * SIDEWALK_WALK_Z;
+        const sidewalkZ = house.sidewalkSide * sidewalkWalkZ;
         setPath(agent, [{ x: 0, z: sidewalkZ }], () => scheduleIdle(agent));
       });
     }).catch(() => {
@@ -303,16 +303,14 @@ export function createPedestrians({
 
   function isCrossingSafe(x, speed = 1.35) {
     const vehicles = traffic?.vehicles ?? [];
-    const crossingDuration = (SIDEWALK_WALK_Z * 2) / Math.max(0.7, speed) + 1.4;
-
     for (const vehicle of vehicles) {
       const direction = vehicle.lane?.direction ?? 0;
       if (!direction) continue;
       const vehicleX = vehicle.root?.position?.x;
       if (!Number.isFinite(vehicleX)) continue;
       const distanceAhead = (x - vehicleX) * direction;
-      const speed = Math.max(1, vehicle.speed || vehicle.baseSpeed || 7);
-      const approachBuffer = Math.max(10, speed * 1.35 + vehicle.length / 2 + 2);
+      const vehicleSpeed = Math.max(1, vehicle.speed || vehicle.baseSpeed || 7);
+      const approachBuffer = Math.max(10, vehicleSpeed * 1.35 + vehicle.length / 2 + 2);
       const close = Math.abs(distanceAhead) <= vehicle.length / 2 + 2.5;
       if (close || (distanceAhead >= 0 && distanceAhead < approachBuffer)) return false;
     }
@@ -330,7 +328,7 @@ export function createPedestrians({
       house.busy = true;
       house.reservedBy = agent;
       agent.house = house;
-      const sidewalkZ = agent.side * SIDEWALK_WALK_Z;
+      const sidewalkZ = agent.side * sidewalkWalkZ;
       const doorApproachZ = house.frontZ + house.frontSide * 0.95;
       setPath(agent, [
         { x: 0, z: sidewalkZ },
@@ -340,8 +338,8 @@ export function createPedestrians({
     }
 
     if (roll < 0.31) {
-      const crossingX = choose(random, CROSSWALKS);
-      const sidewalkZ = agent.side * SIDEWALK_WALK_Z;
+      const crossingX = choose(random, crosswalks);
+      const sidewalkZ = agent.side * sidewalkWalkZ;
       agent.crossingX = crossingX;
       setPath(agent, [
         { x: crossingX, z: sidewalkZ }
@@ -354,9 +352,9 @@ export function createPedestrians({
 
     const direction = unitRandom(random) < 0.5 ? -1 : 1;
     const distance = randomBetween(random, 8, 21);
-    const targetX = Math.max(-ROAD_EDGE + 2, Math.min(ROAD_EDGE - 2, agent.root.position.x + direction * distance));
+    const targetX = Math.max(-roadEdge + 2, Math.min(roadEdge - 2, agent.root.position.x + direction * distance));
     setPath(agent, [
-      { x: targetX, z: agent.side * SIDEWALK_WALK_Z }
+      { x: targetX, z: agent.side * sidewalkWalkZ }
     ], () => {
       agent.lastDirection = direction;
       scheduleIdle(agent);
@@ -365,7 +363,7 @@ export function createPedestrians({
 
   function makeWalker(x, side) {
     const root = createWalkerModel(random);
-    root.position.set(x, 0.005, side * SIDEWALK_WALK_Z);
+    root.position.set(x, 0.005, side * sidewalkWalkZ);
     root.rotation.y = unitRandom(random) < 0.5 ? Math.PI / 2 : -Math.PI / 2;
     group.add(root);
 
@@ -373,8 +371,8 @@ export function createPedestrians({
       name: "pedestrian-collider",
       minX: x - 0.22,
       maxX: x + 0.22,
-      minZ: side * SIDEWALK_WALK_Z - 0.22,
-      maxZ: side * SIDEWALK_WALK_Z + 0.22,
+      minZ: side * sidewalkWalkZ - 0.22,
+      maxZ: side * sidewalkWalkZ + 0.22,
       enabled: true
     };
     colliders.push(collider);
@@ -400,9 +398,7 @@ export function createPedestrians({
     return agent;
   }
 
-  for (const [index, x] of [-26, -16, -5, 7, 17, 27].entries()) {
-    makeWalker(x, index % 2 === 0 ? -1 : 1);
-  }
+  for (const walker of pedestrianPlan.initialWalkers) makeWalker(walker.x, walker.side);
 
   function animateWalker(agent, deltaTime, moving) {
     agent.walkPhase += deltaTime * (moving ? 8.2 : 1.2);
@@ -469,7 +465,7 @@ export function createPedestrians({
           crossingReservations.push(reservation);
           agent.crossingReservation = reservation;
           setPath(agent, [
-            { x: agent.crossingX, z: nextSide * SIDEWALK_WALK_Z }
+            { x: agent.crossingX, z: nextSide * sidewalkWalkZ }
           ], () => {
             const reservationIndex = crossingReservations.indexOf(reservation);
             if (reservationIndex >= 0) crossingReservations.splice(reservationIndex, 1);

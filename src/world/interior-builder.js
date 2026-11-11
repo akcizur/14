@@ -7,11 +7,13 @@ import { addPlanPartitions, addRoomFurnishings } from "./house-plan-geometry.js"
 
 export function buildEmptyInterior({
   id, planId = id === "houseB" ? "houseB" : "houseA",
+  seed = null,
   centerZ, frontSide, wallColor, floorColor,
   doorColor, doorOpenAngle = -1.62,
   streetSpawnKey, onExit = () => {}
 }) {
-  const plan = getHousePlan(planId);
+  const plan = getHousePlan(planId, seed);
+  const entry = plan.entry;
   const group = new THREE.Group();
   group.name = "scene-" + id;
   const colliders = [], interactables = [];
@@ -44,7 +46,8 @@ export function buildEmptyInterior({
     }))
   });
 
-  const doorGap = 1.32;
+  const doorLeft = entry.x - entry.width / 2;
+  const doorRight = entry.x + entry.width / 2;
   const frontWindows = plan.facade.windows.filter(item => item.side === "front");
   const makeOpening = item => ({
     minX: item.x - item.width / 2,
@@ -53,16 +56,17 @@ export function buildEmptyInterior({
     maxY: item.y + item.height / 2
   });
   addWallWithOpenings(group, colliders, id + "-front-wall-left", {
-    minX: -halfW, maxX: -doorGap / 2, z: frontZ,
+    minX: -halfW, maxX: doorLeft, z: frontZ,
     thickness: wallThickness, height: wallHeight, material: wall,
-    openings: frontWindows.filter(item => item.x < 0).map(makeOpening)
+    openings: frontWindows.filter(item => item.x < doorLeft).map(makeOpening)
   });
   addWallWithOpenings(group, colliders, id + "-front-wall-right", {
-    minX: doorGap / 2, maxX: halfW, z: frontZ,
+    minX: doorRight, maxX: halfW, z: frontZ,
     thickness: wallThickness, height: wallHeight, material: wall,
-    openings: frontWindows.filter(item => item.x > 0).map(makeOpening)
+    openings: frontWindows.filter(item => item.x > doorRight).map(makeOpening)
   });
-  addBox(group, null, id + "-front-lintel", 0, 2.2, frontZ, doorGap, 0.85, wallThickness, wall);
+  addBox(group, null, id + "-front-lintel", entry.x, entry.height, frontZ,
+    entry.width, wallHeight - entry.height, wallThickness, wall);
 
   const wallTrim = makeMaterial(plan.facade.trimColor, { roughness: 0.78 });
   const baseboardHeight = 0.16;
@@ -70,10 +74,18 @@ export function buildEmptyInterior({
     0.09, baseboardHeight, depth - 0.4, wallTrim);
   addBox(group, null, id + "-baseboard-right", halfW - 0.25, 0, centerZ,
     0.09, baseboardHeight, depth - 0.4, wallTrim);
-  addBox(group, null, id + "-baseboard-front-left", -3.33, 0, frontZ - frontSide * 0.135,
-    5.34, baseboardHeight, 0.09, wallTrim);
-  addBox(group, null, id + "-baseboard-front-right", 3.33, 0, frontZ - frontSide * 0.135,
-    5.34, baseboardHeight, 0.09, wallTrim);
+  const leftBaseboardWidth = doorLeft + halfW;
+  const rightBaseboardWidth = halfW - doorRight;
+  if (leftBaseboardWidth > 0) {
+    addBox(group, null, id + "-baseboard-front-left",
+      (-halfW + doorLeft) / 2, 0, frontZ - frontSide * 0.135,
+      leftBaseboardWidth, baseboardHeight, 0.09, wallTrim);
+  }
+  if (rightBaseboardWidth > 0) {
+    addBox(group, null, id + "-baseboard-front-right",
+      (doorRight + halfW) / 2, 0, frontZ - frontSide * 0.135,
+      rightBaseboardWidth, baseboardHeight, 0.09, wallTrim);
+  }
   addBox(group, null, id + "-baseboard-rear", 0, 0, rearZ + frontSide * 0.135,
     width, baseboardHeight, 0.09, wallTrim);
 
@@ -96,23 +108,35 @@ export function buildEmptyInterior({
     material: wall,
     prefix: id + "-partition"
   });
-  addRoomFurnishings({ group, plan, centerZ, frontSide });
+  addRoomFurnishings({ group, plan, centerZ, frontSide, colliders });
 
   const door = createDoor(group, colliders, {
     id: id + "-exit-door",
-    x: 0,
+    x: entry.x,
     z: frontZ,
     rotationY: frontSide < 0 ? Math.PI : 0,
     color: doorColor ?? plan.facade.doorColor,
-    openAngle: doorOpenAngle
+    openAngle: doorOpenAngle,
+    width: entry.width,
+    frameHeight: entry.frameHeight,
+    leafWidth: entry.leafWidth,
+    leafHeight: entry.leafHeight,
+    frameDepth: entry.frameDepth,
+    thresholdDepth: entry.thresholdDepth
   });
-  const doorSpawns = createDoorSpawns({ doorZ: frontZ, frontSide });
-  const exitPoint = { x: 0, z: frontZ - frontSide * 1.12 };
+  const doorSpawns = createDoorSpawns({
+    doorX: entry.x,
+    doorZ: frontZ,
+    frontSide,
+    outsideDistance: entry.spawn.outsideDistance,
+    insideDistance: entry.spawn.insideDistance
+  });
+  const exitPoint = { x: entry.x, z: frontZ - frontSide * 1.12 };
   interactables.push({
     id: id + "-exit",
     x: exitPoint.x,
     z: exitPoint.z,
-    range: 2.35,
+    range: entry.interactionRange,
     prompt: "E  /  ODEJÍT NA ULICI",
     action: () => onExit("street", "exit", streetSpawnKey)
   });
@@ -141,6 +165,7 @@ export function buildEmptyInterior({
   return {
     id, type: "interior", group, colliders, interactables,
     plan,
+    seed: plan.seed ?? null,
     doors: { exit: door },
     spawn: doorSpawns.inside,
     spawns: { entry: doorSpawns.inside },

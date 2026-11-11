@@ -7,6 +7,7 @@ import { buildWindowInteriorPreview } from "./interior-preview.js";
 import { createTraffic } from "./traffic.js";
 import { createPedestrians } from "./pedestrians.js";
 import { getHousePlan } from "./house-plans.js";
+import { WORLD_PLAN, assertWorldPlan } from "./world-plan.js";
 
 function addGableEnd(group, name, x, frontZ, rearZ, centerZ, wallHeight, ridgeY, material) {
   const geometry = new THREE.BufferGeometry();
@@ -27,19 +28,19 @@ function addGableEnd(group, name, x, frontZ, rearZ, centerZ, wallHeight, ridgeY,
 
 function buildHouse(group, colliders, config) {
   const {
-    id, planId, centerZ, frontSide, wallColor, roofColor, doorColor,
-    interiorWallColor, interiorFloorColor,
+    id, planId, seed = null, centerZ, frontSide,
     targetLocation, streetSpawnKey, onDoorInteract
   } = config;
-  const plan = getHousePlan(planId);
+  const plan = getHousePlan(planId, seed);
+  const entry = plan.entry;
   const { width, depth } = plan.footprint;
   const wallHeight = plan.wall.height;
   const wallThickness = plan.wall.thickness;
   const halfW = width / 2, halfD = depth / 2;
   const frontZ = centerZ + frontSide * halfD;
   const rearZ = centerZ - frontSide * halfD;
-  const facadeColor = wallColor ?? plan.facade.wallColor;
-  const roofFinish = roofColor ?? plan.roof.color;
+  const facadeColor = plan.facade.wallColor;
+  const roofFinish = plan.roof.color;
   const trimColor = plan.facade.trimColor;
   const wall = makeMaterial(facadeColor);
   const roof = makeMaterial(roofFinish, { roughness: 0.98 });
@@ -68,7 +69,8 @@ function buildHouse(group, colliders, config) {
   const rearWindowRotation = frontSide > 0 ? Math.PI : 0;
   rearWindows.forEach(item => addWindow(group, item.x, item.y, rearWindowZ, item.width, item.height, rearWindowRotation));
 
-  const doorGap = 1.32;
+  const doorLeft = entry.x - entry.width / 2;
+  const doorRight = entry.x + entry.width / 2;
   const frontWindows = plan.facade.windows.filter(item => item.side === "front");
   const windowOpening = item => ({
     minX: item.x - item.width / 2,
@@ -78,16 +80,17 @@ function buildHouse(group, colliders, config) {
   });
 
   addWallWithOpenings(group, colliders, id + "-front-wall-left", {
-    minX: -halfW, maxX: -doorGap / 2, z: frontZ,
+    minX: -halfW, maxX: doorLeft, z: frontZ,
     thickness: wallThickness, height: wallHeight, material: wall,
-    openings: frontWindows.filter(item => item.x < 0).map(windowOpening)
+    openings: frontWindows.filter(item => item.x < doorLeft).map(windowOpening)
   });
   addWallWithOpenings(group, colliders, id + "-front-wall-right", {
-    minX: doorGap / 2, maxX: halfW, z: frontZ,
+    minX: doorRight, maxX: halfW, z: frontZ,
     thickness: wallThickness, height: wallHeight, material: wall,
-    openings: frontWindows.filter(item => item.x > 0).map(windowOpening)
+    openings: frontWindows.filter(item => item.x > doorRight).map(windowOpening)
   });
-  addBox(group, null, id + "-front-lintel", 0, 2.22, frontZ, doorGap, 0.92, wallThickness, wall);
+  addBox(group, null, id + "-front-lintel", entry.x, entry.height, frontZ,
+    entry.width, wallHeight - entry.height, wallThickness, wall);
 
   const roofLayout = createGableRoofLayout({
     centerZ,
@@ -99,7 +102,7 @@ function buildHouse(group, colliders, config) {
 
   for (const panel of roofLayout.panels) {
     const roofPanel = new THREE.Mesh(
-      new THREE.BoxGeometry(width + 0.85, 0.22, panel.depth),
+      new THREE.BoxGeometry(width + plan.roof.sideOverhang * 2, 0.22, panel.depth),
       roof
     );
     roofPanel.name = id + "-roof-slope-" + (panel.side < 0 ? "negative-z" : "positive-z");
@@ -113,7 +116,7 @@ function buildHouse(group, colliders, config) {
     for (const edgeX of [-1, 1]) {
       const verge = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.14, panel.depth), trim);
       verge.name = id + "-roof-verge-" + (edgeX < 0 ? "left-" : "right-") + (panel.side < 0 ? "north" : "south");
-      verge.position.set(edgeX * (halfW + 0.34), panel.centerY, panel.centerZ);
+      verge.position.set(edgeX * (halfW + plan.roof.sideOverhang), panel.centerY, panel.centerZ);
       verge.rotation.x = panel.rotationX;
       verge.castShadow = true;
       verge.receiveShadow = true;
@@ -123,7 +126,7 @@ function buildHouse(group, colliders, config) {
 
   // A continuous ridge cap hides the join between the two roof planes.
   const ridgeCap = new THREE.Mesh(
-    new THREE.BoxGeometry(width + 1.05, 0.22, 0.34),
+    new THREE.BoxGeometry(width + plan.roof.sideOverhang * 2 + 0.2, 0.22, 0.34),
     trim
   );
   ridgeCap.name = id + "-roof-ridge-cap";
@@ -141,17 +144,17 @@ function buildHouse(group, colliders, config) {
     frontZ, rearZ, centerZ, wallHeight, roofLayout.ridgeY, gableWall
   );
 
-  const eaveY = wallHeight - Math.tan(roofLayout.pitch) * 0.78;
+  const eaveY = wallHeight - Math.tan(roofLayout.pitch) * plan.roof.overhang;
   const eaveBaseY = eaveY - 0.09;
   addBox(
     group, null, id + "-eaves-front",
-    0, eaveBaseY, frontZ + frontSide * 0.78,
-    width + 0.5, 0.18, 0.16, trim
+    0, eaveBaseY, frontZ + frontSide * plan.roof.overhang,
+    width + plan.roof.sideOverhang * 2, 0.18, 0.16, trim
   );
   addBox(
     group, null, id + "-eaves-rear",
-    0, eaveBaseY, rearZ - frontSide * 0.78,
-    width + 0.5, 0.18, 0.16, trim
+    0, eaveBaseY, rearZ - frontSide * plan.roof.overhang,
+    width + plan.roof.sideOverhang * 2, 0.18, 0.16, trim
   );
 
   const windowZ = frontZ + frontSide * (wallThickness / 2 + 0.005);
@@ -173,13 +176,13 @@ function buildHouse(group, colliders, config) {
   }
 
   // Gutters and downpipes finish the roof edge and anchor its overhang visually.
-  const gutterGeometry = new THREE.CylinderGeometry(0.055, 0.055, width + 0.5, 8);
+  const gutterGeometry = new THREE.CylinderGeometry(0.055, 0.055, width + plan.roof.sideOverhang * 2, 8);
   const pipeGeometry = new THREE.CylinderGeometry(0.045, 0.045, 2.88, 8);
   const connectorGeometry = new THREE.CylinderGeometry(0.04, 0.04, 0.66, 8);
   const pipeMaterial = makeMaterial(0x626966, { metalness: 0.22, roughness: 0.64 });
   for (const [facadeName, edgeZ, wallZ] of [
-    ["front", frontZ + frontSide * 0.78, frontZ + frontSide * 0.16],
-    ["rear", rearZ - frontSide * 0.78, rearZ - frontSide * 0.16]
+    ["front", frontZ + frontSide * plan.roof.overhang, frontZ + frontSide * (wallThickness / 2 + 0.03)],
+    ["rear", rearZ - frontSide * plan.roof.overhang, rearZ - frontSide * (wallThickness / 2 + 0.03)]
   ]) {
     const gutter = new THREE.Mesh(gutterGeometry, pipeMaterial);
     gutter.name = id + "-" + facadeName + "-gutter";
@@ -188,7 +191,7 @@ function buildHouse(group, colliders, config) {
     gutter.castShadow = true;
     group.add(gutter);
 
-    for (const pipeX of [-5.65, 5.65]) {
+    for (const pipeX of [-1, 1].map(side => side * (halfW - 0.35))) {
       const pipe = new THREE.Mesh(pipeGeometry, pipeMaterial);
       pipe.name = id + "-" + facadeName + "-downpipe-" + (pipeX < 0 ? "left" : "right");
       pipe.position.set(pipeX, 1.44, wallZ);
@@ -209,62 +212,91 @@ function buildHouse(group, colliders, config) {
     frontSide,
     wallColor: interiorWallColor ?? plan.finish.wallColor,
     floorColor: interiorFloorColor ?? plan.finish.floorColor,
-    planId
+    planId,
+    seed
   }));
 
-  if (plan.details.porchPosts) {
-    const porchZ = frontZ + frontSide * 0.92;
+  if (plan.details.porch) {
+    const porch = plan.details.porch;
+    const porchZ = frontZ + frontSide * (entry.path.setback - 1.78);
     const porchMetal = makeMaterial(0x565b58, { roughness: 0.82 });
-    addBox(group, null, id + "-porch-canopy", 0, 2.78, porchZ, 3.7, 0.16, 1.75, roof);
-    addBox(group, null, id + "-porch-beam", 0, 2.55, porchZ + frontSide * 0.68, 3.45, 0.16, 0.16, trim);
-    for (const postX of [-1.48, 1.48]) {
-      addBox(group, colliders, id + "-porch-post", postX, 0, porchZ + frontSide * 0.68,
-        0.14, 2.55, 0.14, porchMetal, true);
+    addBox(group, null, id + "-porch-canopy", entry.x, porch.height - 0.16, porchZ,
+      porch.width, 0.16, porch.depth, roof);
+    addBox(group, null, id + "-porch-beam", entry.x, porch.height - 0.23,
+      porchZ + frontSide * porch.postOffsetZ, porch.width - 0.25, 0.16, 0.16, trim);
+    for (const postX of [-1, 1].map(side => entry.x + side * porch.postOffsetX)) {
+      addBox(group, colliders, id + "-porch-post", postX, 0,
+        porchZ + frontSide * porch.postOffsetZ, 0.14, porch.postHeight, 0.14, porchMetal, true);
     }
   }
-  if (plan.details.entryStep) {
-    for (const [stepIndex, step] of [[0, 0.42], [1, 0.86]]) {
-      addBox(group, null, id + "-entry-step-" + stepIndex, 0, stepIndex * 0.1,
-        frontZ + frontSide * step, 2.05 - stepIndex * 0.18, 0.12, 0.62, foundation);
+  if (plan.details.entryStep && plan.details.steps) {
+    const steps = plan.details.steps;
+    for (let stepIndex = 0; stepIndex < steps.count; stepIndex += 1) {
+      addBox(group, null, id + "-entry-step-" + stepIndex, entry.x, stepIndex * steps.rise,
+        frontZ + frontSide * (steps.firstOffset + stepIndex * steps.offsetStep),
+        steps.width - stepIndex * 0.18, 0.12, steps.depth, foundation);
     }
   }
-  if (plan.details.chimney) {
-    const chimneyLocalZ = -1.15;
-    const chimneyZ = centerZ + frontSide * chimneyLocalZ;
-    const roofBaseY = wallHeight + Math.tan(plan.roof.pitch) * (halfD - Math.abs(chimneyLocalZ));
+  if (plan.details.chimney && plan.details.chimneyPlacement) {
+    const chimneyPlan = plan.details.chimneyPlacement;
+    const chimneyZ = centerZ + frontSide * chimneyPlan.localZ;
+    const roofBaseY = wallHeight + Math.tan(plan.roof.pitch) * (halfD - Math.abs(chimneyPlan.localZ));
     const chimney = makeMaterial(0x77736b, { roughness: 0.96 });
-    addBox(group, null, id + "-chimney", 4.55, roofBaseY, chimneyZ, 0.82, 1.45, 0.82, chimney);
-    addBox(group, null, id + "-chimney-cap", 4.55, roofBaseY + 1.4, chimneyZ, 0.98, 0.14, 0.98, trim);
+    addBox(group, null, id + "-chimney", chimneyPlan.x, roofBaseY, chimneyZ,
+      chimneyPlan.width, chimneyPlan.height, chimneyPlan.width, chimney);
+    addBox(group, null, id + "-chimney-cap", chimneyPlan.x, roofBaseY + chimneyPlan.height,
+      chimneyZ, chimneyPlan.capWidth, chimneyPlan.capHeight, chimneyPlan.capWidth, trim);
   }
 
   const door = createDoor(group, colliders, {
-    id: id + "-front-door", x: 0, z: frontZ,
-    rotationY: frontSide < 0 ? Math.PI : 0, color: doorColor ?? plan.facade.doorColor
+    id: id + "-front-door", x: entry.x, z: frontZ,
+    rotationY: frontSide < 0 ? Math.PI : 0, color: plan.facade.doorColor,
+    width: entry.width,
+    frameHeight: entry.frameHeight,
+    leafWidth: entry.leafWidth,
+    leafHeight: entry.leafHeight,
+    frameDepth: entry.frameDepth,
+    thresholdDepth: entry.thresholdDepth
   });
-  const doorSpawns = createDoorSpawns({ doorZ: frontZ, frontSide });
+  const doorSpawns = createDoorSpawns({
+    doorX: entry.x, doorZ: frontZ, frontSide,
+    outsideDistance: entry.spawn.outsideDistance,
+    insideDistance: entry.spawn.insideDistance
+  });
 
   const pathMat = makeMaterial(0xaaa79c);
   const lawnMat = makeMaterial(0x77836f);
-  addPlane(group, id + "-front-lawn", 0, frontZ + frontSide * 2.7, 15, 6.2, lawnMat, -0.035);
-  addPlane(group, id + "-entry-path", 0, frontZ + frontSide * 2.7, 1.8, 5.6, pathMat, 0.008);
+  addPlane(group, id + "-front-lawn", entry.x, frontZ + frontSide * entry.path.setback,
+    entry.path.lawnWidth, entry.path.lawnDepth, lawnMat, -0.035);
+  addPlane(group, id + "-entry-path", entry.x, frontZ + frontSide * entry.path.setback,
+    entry.path.width, entry.path.length, pathMat, 0.008);
 
   return {
     door,
     spawns: doorSpawns,
     interactable: {
       id: "enter-" + id,
-      x: 0, z: frontZ,
-      range: 2.45,
+      x: entry.x, z: frontZ,
+      range: entry.interactionRange,
       requiresFacing: true,
       facingThreshold: 0.18,
       prompt: "E  /  VSTOUPIT DO " + (id === "house-a" ? "DOMU A" : "DOMU B"),
       action: () => onDoorInteract(targetLocation, targetLocation, "entry")
     },
-    streetSpawnKey
+    streetSpawnKey,
+    plan,
+    frontZ,
+    frontSide
   };
 }
 
-export function buildExterior({ onDoorInteract = () => {} } = {}) {
+export function buildExterior({
+  onDoorInteract = () => {},
+  worldPlan = WORLD_PLAN,
+  generatedHouses = false
+} = {}) {
+  assertWorldPlan(worldPlan);
+  const streetPlan = worldPlan.street;
   const group = new THREE.Group();
   group.name = "scene-street";
   const colliders = [], interactables = [];
@@ -274,66 +306,105 @@ export function buildExterior({ onDoorInteract = () => {} } = {}) {
   const curb = makeMaterial(0xc8c3b7);
   const markings = makeMaterial(0xd0cfc2);
 
-  addPlane(group, "street-ground", 0, 0, 66, 52, grass, -0.08);
-  addPlane(group, "street-asphalt", 0, 0, 64, 8.4, road, 0.005);
-  addPlane(group, "north-sidewalk", 0, -5.25, 64, 1.7, sidewalk, 0.025);
-  addPlane(group, "south-sidewalk", 0, 5.25, 64, 1.7, sidewalk, 0.025);
-  addBox(group, null, "north-curb", 0, 0.02, -4.35, 64, 0.16, 0.18, curb);
-  addBox(group, null, "south-curb", 0, 0.02, 4.35, 64, 0.16, 0.18, curb);
-  for (let x = -29; x <= 29; x += 8) addPlane(group, "road-center-marking", x, 0, 3.3, 0.12, markings, 0.021);
-  for (const crossingX of [-24, -12, 12, 24]) {
-    for (let stripe = -4; stripe <= 4; stripe += 1) {
-      addPlane(group, "zebra-crossing-marking", crossingX + stripe * 0.78, 0, 0.43, 7.7, markings, 0.024);
+  const ground = streetPlan.ground;
+  addPlane(group, "street-ground", ground.centerX, ground.centerZ,
+    ground.width, ground.depth, grass, ground.y);
+
+  const asphalt = streetPlan.road;
+  addPlane(group, "street-asphalt", asphalt.centerX, asphalt.centerZ,
+    asphalt.width, asphalt.depth, road, asphalt.y);
+  for (const side of streetPlan.sidewalks) {
+    addPlane(group, side.id + "-sidewalk", side.centerX, side.centerZ,
+      side.width, side.depth, sidewalk, side.y);
+    addBox(group, null, side.id + "-curb", 0, 0.02, side.curbZ,
+      side.width, side.curbHeight, side.curbDepth, curb);
+  }
+
+  const centerMarkings = asphalt.centerMarkings;
+  for (let x = centerMarkings.start; x <= centerMarkings.end; x += centerMarkings.spacing) {
+    addPlane(group, "road-center-marking", x, asphalt.centerZ,
+      centerMarkings.width, centerMarkings.depth, markings, centerMarkings.y);
+  }
+  const crossings = streetPlan.crossings;
+  for (const crossingX of crossings.centersX) {
+    for (let stripe = 0; stripe < crossings.stripeCount; stripe += 1) {
+      const centeredStripe = stripe - (crossings.stripeCount - 1) / 2;
+      addPlane(group, "zebra-crossing-marking",
+        crossingX + centeredStripe * crossings.stripeSpacing,
+        asphalt.centerZ,
+        crossings.stripeWidth,
+        crossings.spanZ,
+        markings,
+        crossings.y
+      );
     }
   }
 
-  const houseA = buildHouse(group, colliders, {
-    id: "house-a", planId: "houseA", centerZ: -17, frontSide: 1,
-    wallColor: 0xc9c0af, roofColor: 0x555a59, doorColor: 0x6a574a,
-    interiorWallColor: 0xd3cfc4, interiorFloorColor: 0x918d82,
-    targetLocation: "houseA", streetSpawnKey: "outsideHouseA", onDoorInteract
-  });
-  const houseB = buildHouse(group, colliders, {
-    id: "house-b", planId: "houseB", centerZ: 17, frontSide: -1,
-    wallColor: 0xb4c0bb, roofColor: 0x4b5355, doorColor: 0x536d69,
-    interiorWallColor: 0xc6ceca, interiorFloorColor: 0x858c88,
-    targetLocation: "houseB", streetSpawnKey: "outsideHouseB", onDoorInteract
-  });
+  const buildings = new Map();
+  for (const site of worldPlan.houses) {
+    const house = buildHouse(group, colliders, {
+      ...site,
+      seed: generatedHouses ? site.seed : null,
+      onDoorInteract
+    });
+    buildings.set(site.planId, house);
+    interactables.push(house.interactable);
+  }
 
   const trunk = makeMaterial(0x665748);
   const foliage = makeMaterial(0x536b55);
-  for (const [x, z] of [[-8.2, -17], [8.2, -17], [-8.2, 17], [8.2, 17]]) {
-    addBox(group, colliders, "garden-tree-trunk", x, 0, z, 0.34, 1.35, 0.34, trunk, true);
-    const crown = new THREE.Mesh(new THREE.IcosahedronGeometry(1.25, 1), foliage);
-    crown.position.set(x, 2.0, z);
-    crown.scale.set(1, 1.08, 1);
+  for (const tree of streetPlan.trees) {
+    addBox(group, colliders, "garden-tree-trunk",
+      tree.x, 0, tree.z, tree.trunkWidth ?? 0.34, tree.trunkHeight ?? 1.35,
+      tree.trunkDepth ?? 0.34, trunk, true);
+    const crown = new THREE.Mesh(new THREE.IcosahedronGeometry(tree.crownRadius ?? 1.25, 1), foliage);
+    crown.position.set(tree.x, tree.crownY ?? 2.0, tree.z);
+    crown.scale.set(1, tree.crownScaleY ?? 1.08, 1);
     crown.castShadow = true;
     group.add(crown);
   }
 
-  const traffic = createTraffic({ colliders });
+  const traffic = createTraffic({ colliders, trafficPlan: streetPlan.traffic });
   group.add(traffic.group);
   const pedestrians = createPedestrians({
     colliders,
     traffic,
-    houses: [
-      { id: "house-a", door: houseA.door, interactable: houseA.interactable, frontZ: -12, frontSide: 1, sidewalkSide: -1 },
-      { id: "house-b", door: houseB.door, interactable: houseB.interactable, frontZ: 12, frontSide: -1, sidewalkSide: 1 }
-    ]
+    pedestrianPlan: streetPlan.pedestrians,
+    houses: worldPlan.houses.map(site => {
+      const house = buildings.get(site.planId);
+      return {
+        id: site.id,
+        door: house.door,
+        interactable: house.interactable,
+        frontZ: house.frontZ,
+        frontSide: house.frontSide,
+        sidewalkSide: -house.frontSide
+      };
+    })
   });
   group.add(pedestrians.group);
 
-  interactables.push(houseA.interactable, houseB.interactable);
+  const houseA = buildings.get("houseA");
+  const houseB = buildings.get("houseB");
+  if (!houseA || !houseB) throw new Error("The world plan must define houseA and houseB.");
+  const spawn = streetPlan.spawn ?? { x: 0, z: 0, yaw: 0 };
 
   return {
-    id: "street", type: "exterior", group, colliders, interactables, traffic, pedestrians,
+    id: "street",
+    type: "exterior",
+    group,
+    colliders,
+    interactables,
+    traffic,
+    pedestrians,
+    housePlans: { houseA: houseA.plan, houseB: houseB.plan },
     doors: { houseA: houseA.door, houseB: houseB.door },
-    spawn: { x: 0, z: 0, yaw: 0 },
+    spawn,
     spawns: {
-      start: { x: 0, z: 0, yaw: 0 },
+      start: spawn,
       outsideHouseA: houseA.spawns.outside,
       outsideHouseB: houseB.spawns.outside
     },
-    navigation: { bounds: { minX: -29, maxX: 29, minZ: -23, maxZ: 23 } }
+    navigation: { bounds: streetPlan.navigation }
   };
 }
