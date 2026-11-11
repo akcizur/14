@@ -17,6 +17,7 @@ test("world lighting adds balanced ambient fill, directional sun and environment
   const lighting = createWorldLighting(scene);
 
   assert.equal(scene.environment, lighting.environment);
+  assert.equal(scene.background, lighting.environment);
   assert.ok(scene.environmentIntensity > 0 && scene.environmentIntensity < 1);
   assert.ok(scene.children.includes(lighting.ambient));
   assert.ok(scene.children.includes(lighting.sun));
@@ -25,6 +26,7 @@ test("world lighting adds balanced ambient fill, directional sun and environment
 
   lighting.dispose();
   assert.equal(scene.environment, null);
+  assert.equal(scene.background, null);
   assert.equal(scene.children.includes(lighting.sun), false);
 });
 
