@@ -307,7 +307,7 @@ function applyRealTextureSet(material, sources) {
 }
 
 export async function loadRealPbrMaterials({
-  manifestUrl = "/assets/pbr/manifest.json",
+  manifestUrl = "assets/pbr/manifest.json",
   onProgress = null
 } = {}) {
   if (typeof fetch !== "function") throw new Error("Real PBR assets require browser fetch support.");
