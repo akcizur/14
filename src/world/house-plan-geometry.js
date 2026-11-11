@@ -58,7 +58,10 @@ export function addPlanPartitions({
       addPartitionPiece(group, colliders, prefix + "-" + partition.id + "-segment-" + index,
         partition, (cursor + opening.start) / 2, opening.start - cursor, 0, height,
         thickness, wallMaterial, centerZ, frontSide);
-      addPartitionPiece(group, colliders, prefix + "-" + partition.id + "-lintel-" + index,
+      // The lintel is overhead geometry. The player collider is a 2D
+      // floor footprint, so adding a collider here would turn the high beam
+      // into an invisible full-height wall across the entire doorway.
+      addPartitionPiece(group, null, prefix + "-" + partition.id + "-lintel-" + index,
         partition, (opening.start + opening.end) / 2, opening.end - opening.start,
         opening.height, height - opening.height, thickness, wallMaterial, centerZ, frontSide);
 
