@@ -35,9 +35,9 @@ The street layout uses fewer, more plausible pedestrian crossings while keeping 
 
 ## Photographic materials and lighting
 
-The build fetches the following CC0 material sets from [Poly Haven](https://polyhaven.com): White Stucco 02, Asphalt 02, Brick Pavement 02, Concrete Floor 01, Roof Tiles and Wood Floor. The game loads their diffuse, OpenGL normal, roughness, AO and displacement maps locally from `public/assets/pbr/`; no asset requests are made from the browser to Poly Haven.
+The build fetches the following CC0 material sets from [Poly Haven](https://polyhaven.com): White Stucco 02, Asphalt 02, Brick Pavement 02, Concrete Floor 01, Roof Tiles, Wood Floor and Leafy Grass. The game loads their diffuse, OpenGL normal, roughness, AO and displacement maps locally from `public/assets/pbr/`; no asset requests are made from the browser to Poly Haven.
 
-The outdoor lighting uses the Poly Haven Kloofendal 48d Partly Cloudy HDRI for image-based lighting and reflections, together with a directional sun and hemisphere fill. A denoised Three.js GTAO pass adds real-time screen-space ambient occlusion around contact areas and corners. The scanned material AO maps remain available as a separate per-surface layer.
+The outdoor lighting uses the Poly Haven Kloofendal 48d Partly Cloudy HDRI for image-based lighting and reflections, together with a directional sun and hemisphere fill. A denoised Three.js GTAO pass adds real-time screen-space ambient occlusion around contact areas and corners. GTAO runs at a reduced internal resolution and is upscaled for the final frame to limit its frame-time cost. The scanned material AO maps remain available as a separate per-surface layer.
 
 Prepare assets locally with:
 
