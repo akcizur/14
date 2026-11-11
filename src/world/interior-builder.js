@@ -24,7 +24,7 @@ export function buildEmptyInterior({
   const frontZ = centerZ + frontSide * halfD;
   const rearZ = centerZ - frontSide * halfD;
   const wall = makeSurfaceMaterial("plaster", wallColor ?? plan.finish.wallColor, { roughness: 0.95, bumpScale: 0.022 }, [3.1, 1.35]);
-  const floor = makeSurfaceMaterial("laminate", floorColor ?? plan.finish.floorColor, { roughness: 0.76, bumpScale: 0.014 }, [2.4, 1.8]);
+  const floor = makeSurfaceMaterial("laminate", floorColor ?? plan.finish.floorColor, { roughness: 0.76, bumpScale: 0.014 }, [16, 2.4]);
   const ceiling = makeSurfaceMaterial("plaster", plan.finish.ceilingColor, { roughness: 0.96, bumpScale: 0.012 }, [2.4, 2.4]);
 
   addBox(group, null, id + "-floor", 0, -0.18, centerZ, width, 0.18, depth, floor);
