@@ -3,6 +3,9 @@ import * as THREE from "three";
 const SIZE = 256;
 const textureCache = new Map();
 const textureVariantCache = new Map();
+const liveSurfaceMaterials = new Set();
+const realTextureSources = new Map();
+const externalVariants = new Set();
 const clamp01 = value => Math.max(0, Math.min(1, value));
 
 function hash2(x, y, seed = 0) {
@@ -251,6 +254,107 @@ export function getSurfaceMaps(kind, repeatU = 2, repeatV = 2) {
   return textureVariantCache.get(variantKey);
 }
 
+function assetKeyForSurface(kind) {
+  if (kind === "laminate") return "wood";
+  return kind;
+}
+
+function createExternalVariant(source, repeatU, repeatV, colorMap = false) {
+  const texture = source.clone();
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(repeatU, repeatV);
+  texture.colorSpace = colorMap ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.generateMipmaps = true;
+  texture.anisotropy = 8;
+  texture.needsUpdate = true;
+  externalVariants.add(texture);
+  return texture;
+}
+
+function applyRealTextureSet(material, sources) {
+  const repeat = material.userData.surfaceRepeat || [2, 2];
+  const [repeatU, repeatV] = repeat;
+  const variants = [];
+
+  const assign = (property, key, colorMap = false) => {
+    const source = sources[key];
+    if (!source) return;
+    const texture = createExternalVariant(source, repeatU, repeatV, colorMap);
+    material[property] = texture;
+    variants.push(texture);
+  };
+
+  assign("map", "diffuse", true);
+  assign("normalMap", "normal");
+  assign("roughnessMap", "roughness");
+  assign("aoMap", "ao");
+  assign("bumpMap", "height");
+
+  if (material.normalMap) material.normalScale.set(0.72, 0.72);
+  if (material.aoMap) material.aoMapIntensity = 0.72;
+  if (material.bumpMap) material.bumpScale = Math.min(material.userData.surfaceBumpScale ?? 0.025, 0.028);
+  material.userData.externalTextureVariants = variants;
+  material.userData.realPbr = true;
+  material.needsUpdate = true;
+}
+
+export async function loadRealPbrMaterials({
+  manifestUrl = "/assets/pbr/manifest.json",
+  onProgress = null
+} = {}) {
+  if (typeof fetch !== "function") throw new Error("Real PBR assets require browser fetch support.");
+  const response = await fetch(manifestUrl, { cache: "force-cache" });
+  if (!response.ok) throw new Error("PBR manifest request failed: " + response.status);
+  const manifest = await response.json();
+  if (!manifest?.textures || manifest.source !== "Poly Haven") {
+    throw new Error("PBR manifest is missing its Poly Haven texture definitions.");
+  }
+
+  const loader = new THREE.TextureLoader();
+  const loadedKinds = [];
+  for (const [kind, entry] of Object.entries(manifest.textures)) {
+    try {
+      const sources = {};
+      for (const [mapName, record] of Object.entries(entry.maps || {})) {
+        if (!record?.url) continue;
+        const texture = await loader.loadAsync(record.url);
+        texture.colorSpace = mapName === "diffuse" ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.magFilter = THREE.LinearFilter;
+        texture.minFilter = THREE.LinearMipmapLinearFilter;
+        texture.generateMipmaps = true;
+        texture.anisotropy = 8;
+        sources[mapName] = texture;
+      }
+      if (!sources.diffuse || !sources.normal || !sources.roughness) {
+        throw new Error("required diffuse, normal or roughness map is missing");
+      }
+      realTextureSources.set(kind, sources);
+      for (const material of liveSurfaceMaterials) {
+        if (assetKeyForSurface(material.userData.surfaceKind) === kind) {
+          applyRealTextureSet(material, sources);
+        }
+      }
+      loadedKinds.push(kind);
+      onProgress?.({ kind, status: "loaded" });
+    } catch (error) {
+      onProgress?.({ kind, status: "failed", error });
+      console.warn("[PBR] " + kind + " could not be loaded:", error);
+    }
+  }
+
+  return {
+    source: manifest.source,
+    license: manifest.license,
+    textures: loadedKinds,
+    hdri: manifest.hdri?.url || null
+  };
+}
+
 export function disposeSurfaceTextures() {
   for (const maps of textureVariantCache.values()) {
     for (const texture of Object.values(maps)) texture.dispose();
@@ -258,6 +362,16 @@ export function disposeSurfaceTextures() {
   for (const maps of textureCache.values()) {
     for (const texture of Object.values(maps)) texture.dispose();
   }
+  for (const texture of externalVariants) texture.dispose();
+  for (const sources of realTextureSources.values()) {
+    for (const texture of Object.values(sources)) texture.dispose();
+  }
+  for (const material of liveSurfaceMaterials) {
+    material.userData.externalTextureVariants = [];
+  }
+  externalVariants.clear();
+  realTextureSources.clear();
+  liveSurfaceMaterials.clear();
   textureVariantCache.clear();
   textureCache.clear();
 }
@@ -266,7 +380,7 @@ export function makeSurfaceMaterial(kind, color = 0xffffff, options = {}, repeat
   const [repeatU, repeatV] = Array.isArray(repeat) ? repeat : [2, 2];
   const maps = getSurfaceMaps(kind, repeatU, repeatV);
   const { bumpScale = 0.035, ...materialOptions } = options;
-  return new THREE.MeshStandardMaterial({
+  const material = new THREE.MeshStandardMaterial({
     color,
     map: maps.map,
     roughnessMap: maps.roughnessMap,
@@ -277,4 +391,13 @@ export function makeSurfaceMaterial(kind, color = 0xffffff, options = {}, repeat
     roughness: 0.88,
     ...materialOptions
   });
+  material.name = String(kind) + "-surface";
+  material.userData.surfaceKind = String(kind);
+  material.userData.surfaceRepeat = [Math.max(0.1, Number(repeatU) || 2), Math.max(0.1, Number(repeatV) || 2)];
+  material.userData.surfaceBumpScale = bumpScale;
+  liveSurfaceMaterials.add(material);
+
+  const existing = realTextureSources.get(assetKeyForSurface(kind));
+  if (existing) applyRealTextureSet(material, existing);
+  return material;
 }
