@@ -160,30 +160,7 @@ function surfaceProfile(kind, u, v, seed) {
   return { grain, relief: clamp01(relief), roughness };
 }
 
-function createMap(kind, mapType, seed) {
-  const data = new Uint8Array(SIZE * SIZE * 4);
-  for (let y = 0; y < SIZE; y += 1) {
-    for (let x = 0; x < SIZE; x += 1) {
-      const index = (y * SIZE + x) * 4;
-      const profile = surfaceProfile(kind, x / SIZE, y / SIZE, seed);
-      if (mapType === "color") {
-        const value = Math.max(0, Math.min(255, Math.round(224 + profile.grain * 220)));
-        data[index] = value;
-        data[index + 1] = value;
-        data[index + 2] = value;
-        data[index + 3] = 255;
-      } else if (mapType === "roughness") {
-        const value = Math.round(clamp01(profile.roughness + profile.grain * 0.12) * 255);
-        data[index] = data[index + 1] = data[index + 2] = value;
-        data[index + 3] = 255;
-      } else {
-        const value = Math.round(46 + profile.relief * 164);
-        data[index] = data[index + 1] = data[index + 2] = value;
-        data[index + 3] = 255;
-      }
-    }
-  }
-
+function createDataTexture(data, kind, mapType) {
   const texture = new THREE.DataTexture(data, SIZE, SIZE, THREE.RGBAFormat);
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
@@ -197,6 +174,33 @@ function createMap(kind, mapType, seed) {
   return texture;
 }
 
+function createMaps(kind, seed) {
+  const colorData = new Uint8Array(SIZE * SIZE * 4);
+  const roughnessData = new Uint8Array(SIZE * SIZE * 4);
+  const heightData = new Uint8Array(SIZE * SIZE * 4);
+
+  for (let y = 0; y < SIZE; y += 1) {
+    for (let x = 0; x < SIZE; x += 1) {
+      const index = (y * SIZE + x) * 4;
+      const profile = surfaceProfile(kind, x / SIZE, y / SIZE, seed);
+      const colorValue = Math.max(0, Math.min(255, Math.round(224 + profile.grain * 220)));
+      const roughnessValue = Math.round(clamp01(profile.roughness + profile.grain * 0.12) * 255);
+      const heightValue = Math.round(46 + profile.relief * 164);
+
+      colorData[index] = colorData[index + 1] = colorData[index + 2] = colorValue;
+      roughnessData[index] = roughnessData[index + 1] = roughnessData[index + 2] = roughnessValue;
+      heightData[index] = heightData[index + 1] = heightData[index + 2] = heightValue;
+      colorData[index + 3] = roughnessData[index + 3] = heightData[index + 3] = 255;
+    }
+  }
+
+  return {
+    map: createDataTexture(colorData, kind, "color"),
+    roughnessMap: createDataTexture(roughnessData, kind, "roughness"),
+    bumpMap: createDataTexture(heightData, kind, "height")
+  };
+}
+
 export function getSurfaceMaps(kind, repeatU = 2, repeatV = 2) {
   const name = String(kind || "plaster");
   const u = Math.max(0.1, Number(repeatU) || 2);
@@ -205,11 +209,7 @@ export function getSurfaceMaps(kind, repeatU = 2, repeatV = 2) {
   if (!textureVariantCache.has(variantKey)) {
     if (!textureCache.has(name)) {
       const seed = name.split("").reduce((value, char) => Math.imul(value ^ char.charCodeAt(0), 16777619), 2166136261) >>> 0;
-      textureCache.set(name, {
-        map: createMap(name, "color", seed),
-        roughnessMap: createMap(name, "roughness", seed + 101),
-        bumpMap: createMap(name, "height", seed + 211)
-      });
+      textureCache.set(name, createMaps(name, seed));
     }
     const base = textureCache.get(name);
     const variant = Object.fromEntries(Object.entries(base).map(([key, texture]) => {
