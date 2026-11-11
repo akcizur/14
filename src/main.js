@@ -7,6 +7,8 @@ import { buildHouseA } from "./interiors/house-a.js";
 import { buildHouseB } from "./interiors/house-b.js";
 import { SceneManager } from "./scenes/scene-manager.js";
 import { WORLD_PLAN } from "./world/world-plan.js";
+import { configureWorldRenderer, createWorldLighting } from "./world/lighting.js";
+import { disposeSurfaceTextures } from "./world/surface-materials.js";
 
 const mount = document.getElementById("game");
 const coordinates = document.getElementById("coordinates");
@@ -24,35 +26,20 @@ const defaultHint = coarsePointer
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xa8b8bf);
-scene.fog = new THREE.Fog(0xa8b8bf, 55, 115);
+scene.fog = new THREE.Fog(0x9baeb5, 48, 112);
 const camera = new THREE.PerspectiveCamera(74, 1, 0.05, 150);
 const renderer = new THREE.WebGLRenderer({
   antialias: true,
   alpha: false,
   powerPreference: "high-performance"
 });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+configureWorldRenderer(renderer, window.devicePixelRatio || 1);
 renderer.domElement.id = "screenCanvas";
 renderer.domElement.setAttribute("aria-label", "První osoba — dva domy");
 renderer.domElement.tabIndex = 0;
 mount.appendChild(renderer.domElement);
 
-scene.add(new THREE.HemisphereLight(0xe7eef0, 0x62675c, 1.75));
-const sun = new THREE.DirectionalLight(0xfff0d5, 2.05);
-sun.position.set(-24, 38, 20);
-sun.castShadow = true;
-sun.shadow.mapSize.set(1536, 1536);
-sun.shadow.camera.left = -38;
-sun.shadow.camera.right = 38;
-sun.shadow.camera.top = 38;
-sun.shadow.camera.bottom = -38;
-sun.shadow.camera.near = 1;
-sun.shadow.camera.far = 95;
-sun.shadow.bias = -0.0002;
-scene.add(sun);
+const worldLighting = createWorldLighting(scene);
 
 const state = { started: false, paused: false, transitioning: false };
 let sceneManager;
@@ -154,5 +141,7 @@ window.addEventListener("beforeunload", () => {
   exterior.traffic.dispose();
   exterior.pedestrians.dispose();
   sceneManager.dispose();
+  worldLighting.dispose();
+  disposeSurfaceTextures();
   renderer.dispose();
 });
