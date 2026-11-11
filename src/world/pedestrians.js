@@ -69,10 +69,12 @@ function createWalkerModel(random) {
   body.name = "pedestrian-upper-body";
   root.add(body);
 
-  addMesh(body, new THREE.BoxGeometry(0.43, 0.59, 0.29), mats.shirt, "pedestrian-torso", 0, 1.09, 0);
-  addMesh(body, new THREE.BoxGeometry(0.37, 0.22, 0.27), mats.trousers, "pedestrian-pelvis", 0, 0.75, 0);
-  addMesh(body, new THREE.SphereGeometry(0.16, 12, 10), mats.skin, "pedestrian-head", 0, 1.57, 0.015);
-  addMesh(body, new THREE.SphereGeometry(0.165, 10, 7, 0, Math.PI * 2, 0, Math.PI * 0.48), mats.hair, "pedestrian-hair", 0, 1.65, -0.005);
+  addMesh(body, new THREE.CapsuleGeometry(0.205, 0.22, 5, 12), mats.shirt, "pedestrian-torso", 0, 1.09, 0);
+  const pelvis = addMesh(body, new THREE.SphereGeometry(0.19, 12, 10), mats.trousers, "pedestrian-pelvis", 0, 0.75, 0);
+  pelvis.scale.set(1, 0.68, 0.82);
+  addMesh(body, new THREE.CylinderGeometry(0.095, 0.105, 0.13, 12), mats.skin, "pedestrian-neck", 0, 1.42, 0.005);
+  addMesh(body, new THREE.SphereGeometry(0.155, 16, 12), mats.skin, "pedestrian-head", 0, 1.59, 0.015);
+  addMesh(body, new THREE.SphereGeometry(0.16, 14, 9, 0, Math.PI * 2, 0, Math.PI * 0.48), mats.hair, "pedestrian-hair", 0, 1.67, -0.005);
   addMesh(body, new THREE.SphereGeometry(0.018, 7, 6), mats.detail, "pedestrian-eye-left", -0.055, 1.58, 0.16, false);
   addMesh(body, new THREE.SphereGeometry(0.018, 7, 6), mats.detail, "pedestrian-eye-right", 0.055, 1.58, 0.16, false);
 
@@ -82,24 +84,30 @@ function createWalkerModel(random) {
     shoulder.name = side < 0 ? "pedestrian-arm-left" : "pedestrian-arm-right";
     shoulder.position.set(side * 0.255, 1.34, 0);
     body.add(shoulder);
-    addCylinder(shoulder, "pedestrian-upper-arm", mats.shirt, 0.075, 0.09, 0.34, 0, -0.17, 0);
+    addMesh(shoulder, new THREE.CapsuleGeometry(0.074, 0.19, 4, 10), mats.shirt,
+      "pedestrian-upper-arm", 0, -0.17, 0);
     const elbow = new THREE.Group();
     elbow.position.y = -0.34;
     shoulder.add(elbow);
-    addCylinder(elbow, "pedestrian-forearm", mats.shirt, 0.055, 0.067, 0.29, 0, -0.145, 0);
-    addMesh(elbow, new THREE.SphereGeometry(0.065, 8, 7), mats.skin, "pedestrian-hand", 0, -0.3, 0);
+    addMesh(elbow, new THREE.CapsuleGeometry(0.057, 0.17, 4, 10), mats.shirt,
+      "pedestrian-forearm", 0, -0.145, 0);
+    addMesh(elbow, new THREE.SphereGeometry(0.058, 10, 8), mats.skin, "pedestrian-hand", 0, -0.3, 0);
     arms.push(shoulder);
 
     const leg = new THREE.Group();
     leg.name = side < 0 ? "pedestrian-leg-left" : "pedestrian-leg-right";
     leg.position.set(side * 0.12, 0.78, 0);
     root.add(leg);
-    addCylinder(leg, "pedestrian-thigh", mats.trousers, 0.09, 0.105, 0.38, 0, -0.19, 0);
+    addMesh(leg, new THREE.CapsuleGeometry(0.085, 0.2, 4, 10), mats.trousers,
+      "pedestrian-thigh", 0, -0.19, 0);
     const knee = new THREE.Group();
     knee.position.y = -0.38;
     leg.add(knee);
-    addCylinder(knee, "pedestrian-shin", mats.trousers, 0.065, 0.075, 0.34, 0, -0.17, 0);
-    addMesh(knee, new THREE.BoxGeometry(0.15, 0.1, 0.27), mats.shoes, "pedestrian-shoe", 0, -0.34, 0.075);
+    addMesh(knee, new THREE.CapsuleGeometry(0.061, 0.18, 4, 10), mats.trousers,
+      "pedestrian-shin", 0, -0.17, 0);
+    const shoe = addMesh(knee, new THREE.SphereGeometry(0.115, 10, 8), mats.shoes,
+      "pedestrian-shoe", 0, -0.34, 0.075);
+    shoe.scale.set(0.72, 0.48, 1.34);
     leg.userData.knee = knee;
     root.userData.legs = [...(root.userData.legs || []), leg];
   }
@@ -123,24 +131,31 @@ function createSeatedPerson(random) {
   root.userData.pedestrian = "seated";
   const mats = createPersonMaterials(random);
 
-  addMesh(root, new THREE.BoxGeometry(0.43, 0.58, 0.29), mats.shirt, "seated-torso", 0, 1.03, -0.025);
-  addMesh(root, new THREE.BoxGeometry(0.36, 0.2, 0.28), mats.trousers, "seated-pelvis", 0, 0.59, 0.02);
-  addMesh(root, new THREE.SphereGeometry(0.16, 12, 10), mats.skin, "seated-head", 0, 1.5, 0.02);
-  addMesh(root, new THREE.SphereGeometry(0.165, 10, 7, 0, Math.PI * 2, 0, Math.PI * 0.48), mats.hair, "seated-hair", 0, 1.58, 0);
-  addMesh(root, new THREE.BoxGeometry(0.18, 0.16, 0.46), mats.trousers, "seated-thigh-left", -0.11, 0.5, 0.23);
-  addMesh(root, new THREE.BoxGeometry(0.18, 0.16, 0.46), mats.trousers, "seated-thigh-right", 0.11, 0.5, 0.23);
-  addMesh(root, new THREE.BoxGeometry(0.14, 0.4, 0.15), mats.trousers, "seated-shin-left", -0.11, 0.27, 0.44);
-  addMesh(root, new THREE.BoxGeometry(0.14, 0.4, 0.15), mats.trousers, "seated-shin-right", 0.11, 0.27, 0.44);
-  addMesh(root, new THREE.BoxGeometry(0.15, 0.1, 0.27), mats.shoes, "seated-shoe-left", -0.11, 0.065, 0.52);
-  addMesh(root, new THREE.BoxGeometry(0.15, 0.1, 0.27), mats.shoes, "seated-shoe-right", 0.11, 0.065, 0.52);
+  addMesh(root, new THREE.CapsuleGeometry(0.205, 0.2, 5, 12), mats.shirt, "seated-torso", 0, 1.03, -0.025);
+  const seatedPelvis = addMesh(root, new THREE.SphereGeometry(0.18, 12, 10), mats.trousers, "seated-pelvis", 0, 0.59, 0.02);
+  seatedPelvis.scale.set(1, 0.65, 0.82);
+  addMesh(root, new THREE.SphereGeometry(0.155, 16, 12), mats.skin, "seated-head", 0, 1.5, 0.02);
+  addMesh(root, new THREE.SphereGeometry(0.16, 14, 9, 0, Math.PI * 2, 0, Math.PI * 0.48), mats.hair, "seated-hair", 0, 1.58, 0);
+  for (const side of [-1, 1]) {
+    const thigh = addMesh(root, new THREE.CapsuleGeometry(0.085, 0.2, 4, 10),
+      mats.trousers, "seated-thigh-" + (side < 0 ? "left" : "right"), side * 0.11, 0.5, 0.23);
+    thigh.rotation.x = Math.PI / 2;
+    const shin = addMesh(root, new THREE.CapsuleGeometry(0.063, 0.18, 4, 10),
+      mats.trousers, "seated-shin-" + (side < 0 ? "left" : "right"), side * 0.11, 0.27, 0.44);
+    shin.rotation.x = 0.12;
+    const shoe = addMesh(root, new THREE.SphereGeometry(0.11, 10, 8),
+      mats.shoes, "seated-shoe-" + (side < 0 ? "left" : "right"), side * 0.11, 0.065, 0.52);
+    shoe.scale.set(0.72, 0.48, 1.34);
+  }
 
   for (const side of [-1, 1]) {
     const arm = new THREE.Group();
     arm.position.set(side * 0.25, 1.27, 0.015);
     root.add(arm);
     arm.rotation.x = -0.28;
-    addCylinder(arm, "seated-arm", mats.shirt, 0.07, 0.085, 0.34, 0, -0.17, 0);
-    addMesh(arm, new THREE.SphereGeometry(0.06, 8, 7), mats.skin, "seated-hand", 0, -0.33, 0.02);
+    addMesh(arm, new THREE.CapsuleGeometry(0.07, 0.2, 4, 10), mats.shirt,
+      "seated-arm", 0, -0.17, 0);
+    addMesh(arm, new THREE.SphereGeometry(0.058, 10, 8), mats.skin, "seated-hand", 0, -0.33, 0.02);
   }
   return root;
 }
