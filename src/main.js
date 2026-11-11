@@ -25,8 +25,8 @@ const defaultHint = coarsePointer
   : "WASD POHYB · SHIFT BĚH · SPACE SKOK · MYŠ POHLED · E INTERAKCE";
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xa8b8bf);
-scene.fog = new THREE.Fog(0x9baeb5, 48, 112);
+scene.background = new THREE.Color(0xc4c9c7);
+scene.fog = new THREE.Fog(0xb8c0bf, 54, 128);
 const camera = new THREE.PerspectiveCamera(74, 1, 0.05, 150);
 const renderer = new THREE.WebGLRenderer({
   antialias: true,
