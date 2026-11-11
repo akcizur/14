@@ -16,6 +16,9 @@ test("opposing houses share the same roof profile and complete roof edge detail"
     const ridge = street.group.getObjectByName(id + "-roof-ridge-cap");
 
     assert.ok(negativeSlope && positiveSlope && ridge);
+    const gable = street.group.getObjectByName(id + "-left-gable");
+    assert.ok(gable?.geometry.getAttribute("uv"), id + " gable walls need UVs for plaster maps");
+    assert.equal(gable.geometry.getAttribute("uv").count, 3);
     const plan = getHousePlan(id === "house-a" ? "houseA" : "houseB");
     assert.ok(Math.abs(negativeSlope.rotation.x + plan.roof.pitch) < 1e-10);
     assert.ok(Math.abs(positiveSlope.rotation.x - plan.roof.pitch) < 1e-10);
@@ -222,8 +225,14 @@ test("roof drainage pipes terminate at the gutter and use exact connector spans"
 test("playable rooms and exterior previews share ceramic floors and woven living rugs", () => {
   for (const interior of [buildHouseA(), buildHouseB()]) {
     assert.ok(interior.group.getObjectByName(interior.id + "-kitchen-floor-finish"));
-    assert.ok(interior.group.getObjectByName(interior.id + "-bathroom-floor-finish"));
-    assert.ok(interior.group.getObjectByName(interior.id + "-living-floor-rug"));
+    const kitchenFloor = interior.group.getObjectByName(interior.id + "-kitchen-floor-finish");
+    const bathroomFloor = interior.group.getObjectByName(interior.id + "-bathroom-floor-finish");
+    const livingRug = interior.group.getObjectByName(interior.id + "-living-floor-rug");
+    assert.ok(kitchenFloor && bathroomFloor && livingRug);
+    assert.equal(kitchenFloor.material.side, THREE.DoubleSide);
+    assert.equal(bathroomFloor.material.side, THREE.DoubleSide);
+    const laminate = interior.group.getObjectByName(interior.id + "-floor");
+    assert.equal(laminate.material.map.repeat.x, 16);
   }
 
   const street = buildExterior();
