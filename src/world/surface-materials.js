@@ -2,6 +2,7 @@ import * as THREE from "three";
 
 const SIZE = 256;
 const textureCache = new Map();
+const textureVariantCache = new Map();
 const clamp01 = value => Math.max(0, Math.min(1, value));
 
 function hash2(x, y, seed = 0) {
@@ -158,7 +159,7 @@ function createMap(kind, mapType, seed) {
       const index = (y * SIZE + x) * 4;
       const profile = surfaceProfile(kind, x / SIZE, y / SIZE, seed);
       if (mapType === "color") {
-        const value = Math.round(224 + profile.grain * 220);
+        const value = Math.max(0, Math.min(255, Math.round(224 + profile.grain * 220)));
         data[index] = value;
         data[index + 1] = value;
         data[index + 2] = value;
@@ -188,25 +189,46 @@ function createMap(kind, mapType, seed) {
   return texture;
 }
 
-export function getSurfaceMaps(kind) {
+export function getSurfaceMaps(kind, repeatU = 2, repeatV = 2) {
   const name = String(kind || "plaster");
-  if (!textureCache.has(name)) {
-    const seed = name.split("").reduce((value, char) => Math.imul(value ^ char.charCodeAt(0), 16777619), 2166136261) >>> 0;
-    textureCache.set(name, {
-      map: createMap(name, "color", seed),
-      roughnessMap: createMap(name, "roughness", seed + 101),
-      bumpMap: createMap(name, "height", seed + 211)
-    });
+  const u = Math.max(0.1, Number(repeatU) || 2);
+  const v = Math.max(0.1, Number(repeatV) || 2);
+  const variantKey = name + ":" + u + ":" + v;
+  if (!textureVariantCache.has(variantKey)) {
+    if (!textureCache.has(name)) {
+      const seed = name.split("").reduce((value, char) => Math.imul(value ^ char.charCodeAt(0), 16777619), 2166136261) >>> 0;
+      textureCache.set(name, {
+        map: createMap(name, "color", seed),
+        roughnessMap: createMap(name, "roughness", seed + 101),
+        bumpMap: createMap(name, "height", seed + 211)
+      });
+    }
+    const base = textureCache.get(name);
+    const variant = Object.fromEntries(Object.entries(base).map(([key, texture]) => {
+      const copy = texture.clone();
+      copy.repeat.set(u, v);
+      copy.needsUpdate = true;
+      return [key, copy];
+    }));
+    textureVariantCache.set(variantKey, variant);
   }
-  return textureCache.get(name);
+  return textureVariantCache.get(variantKey);
+}
+
+export function disposeSurfaceTextures() {
+  for (const maps of textureVariantCache.values()) {
+    for (const texture of Object.values(maps)) texture.dispose();
+  }
+  for (const maps of textureCache.values()) {
+    for (const texture of Object.values(maps)) texture.dispose();
+  }
+  textureVariantCache.clear();
+  textureCache.clear();
 }
 
 export function makeSurfaceMaterial(kind, color = 0xffffff, options = {}, repeat = [2, 2]) {
-  const maps = getSurfaceMaps(kind);
   const [repeatU, repeatV] = Array.isArray(repeat) ? repeat : [2, 2];
-  for (const texture of Object.values(maps)) {
-    texture.repeat.set(Math.max(0.1, repeatU), Math.max(0.1, repeatV));
-  }
+  const maps = getSurfaceMaps(kind, repeatU, repeatV);
   const { bumpScale = 0.035, ...materialOptions } = options;
   return new THREE.MeshStandardMaterial({
     color,
