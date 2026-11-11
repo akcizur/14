@@ -167,8 +167,12 @@ export function addRoomFurnishings({ group, plan, centerZ, frontSide, colliders 
       for (const legX of [-0.43, 0.43]) for (const legZ of [-0.22, 0.22]) {
         addFurniture(room.id + "-coffee-table-leg", x + legX, 0, z + 0.72 + legZ, 0.055, 0.38, 0.055, m.darkWood);
       }
-      addFurniture(room.id + "-media-console", x, 0.28, z - room.depth * 0.42, 1.8, 0.5, 0.34, m.wood);
-      addFurniture(room.id + "-television", x, 1.05, z - room.depth * 0.42 + 0.19, 1.35, 0.82, 0.07, m.dark);
+      // Keep the media unit away from the rear-room doorway. House B's
+      // bedroom entrance sits close to the left edge of this living room.
+      const mediaX = x + room.width * 0.16;
+      const mediaZ = z - room.depth * 0.42;
+      addFurniture(room.id + "-media-console", mediaX, 0.28, mediaZ, 1.8, 0.5, 0.34, m.wood);
+      addFurniture(room.id + "-television", mediaX, 1.05, mediaZ + 0.19, 1.35, 0.82, 0.07, m.dark);
     }
 
     if (room.type === "kitchen") {
