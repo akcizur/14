@@ -193,6 +193,7 @@ export function createWorldLighting(scene, renderer = null) {
     sun,
     hdriReady,
     dispose() {
+      disposed = true;
       scene.remove(ambient, sun, sun.target);
       scene.environment = previousEnvironment ?? null;
       scene.background = previousBackground ?? null;
