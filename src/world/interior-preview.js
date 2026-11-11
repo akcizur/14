@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { addWallWithOpenings, makeMaterial } from "./geometry.js";
+import { addWallWithOpenings, makeMaterial, makeSurfaceMaterial } from "./geometry.js";
 import { getHousePlan } from "./house-plans.js";
 import { addPlanPartitions, addRoomFurnishings } from "./house-plan-geometry.js";
 
@@ -32,13 +32,13 @@ export function buildWindowInteriorPreview({
   const room = new THREE.Group();
   room.name = id + "-window-preview";
   room.userData.staticWindowPreview = true;
-  const wall = makeMaterial(wallColor ?? plan.finish.wallColor, {
+  const wall = makeSurfaceMaterial("plaster", wallColor ?? plan.finish.wallColor, {
     side: THREE.DoubleSide,
     roughness: 0.94
-  });
-  const floor = makeMaterial(floorColor ?? plan.finish.floorColor, { roughness: 0.98 });
-  const ceiling = makeMaterial(plan.finish.ceilingColor, { side: THREE.DoubleSide, roughness: 0.96 });
-  const trim = makeMaterial(plan.facade.trimColor, { roughness: 0.86 });
+  }, [3.1, 1.35]);
+  const floor = makeSurfaceMaterial("laminate", floorColor ?? plan.finish.floorColor, { roughness: 0.78, bumpScale: 0.014 }, [2.4, 1.8]);
+  const ceiling = makeSurfaceMaterial("plaster", plan.finish.ceilingColor, { side: THREE.DoubleSide, roughness: 0.96, bumpScale: 0.012 }, [2.4, 2.4]);
+  const trim = makeSurfaceMaterial("wood", plan.facade.trimColor, { roughness: 0.86, bumpScale: 0.014 }, [2, 1]);
 
   const floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(width - 0.42, depth - 0.42), floor);
   floorMesh.name = id + "-preview-floor";
@@ -108,7 +108,7 @@ export function buildWindowInteriorPreview({
   rearBaseboard.position.set(0, 0.08, rearZ + frontSide * 0.18);
   room.add(rearBaseboard);
 
-  const fixtureBody = makeMaterial(0x77766f, { roughness: 0.72 });
+  const fixtureBody = makeSurfaceMaterial("metal", 0x77766f, { metalness: 0.24, roughness: 0.58, bumpScale: 0.006 }, [1, 1]);
   const fixtureGlow = makeMaterial(0xffe9c9, {
     emissive: 0xffd9a6,
     emissiveIntensity: 0.6,
