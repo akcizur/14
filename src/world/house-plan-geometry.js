@@ -115,7 +115,9 @@ export function addRoomFurnishings({ group, plan, centerZ, frontSide }) {
   const root = new THREE.Group();
   root.name = plan.id + "-procedural-furnishings";
   root.position.set(0, 0, centerZ);
-  root.rotation.y = frontSide < 0 ? Math.PI : 0;
+  // Mirror only the depth axis so rooms stay on their planned left/right side
+  // when the entrance facade faces the opposite street direction.
+  root.scale.z = frontSide;
   group.add(root);
   const m = makeRoomMaterials();
 
