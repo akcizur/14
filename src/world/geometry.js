@@ -1,7 +1,7 @@
-export { makeSurfaceMaterial } from "./surface-materials.js";
-
 import * as THREE from "three";
 import { makeSurfaceMaterial } from "./surface-materials.js";
+
+export { makeSurfaceMaterial };
 
 export function makeMaterial(color, options = {}) {
   return new THREE.MeshStandardMaterial({ color, roughness: 0.92, ...options });
