@@ -1,36 +1,14 @@
 import * as THREE from "three";
-import { addBox, addPlane, addWallWithOpenings, addWindow, makeMaterial, makeSurfaceMaterial } from "./geometry.js";
+import { addBox, addPlane, makeMaterial, makeSurfaceMaterial } from "./geometry.js";
 import { createDoor } from "./interactions/door-transition.js";
 import { createDoorSpawns } from "../scenes/door-spawns.js";
-import { createGableRoofLayout } from "./roof-geometry.js";
 import { buildWindowInteriorPreview } from "./interior-preview.js";
 import { createTraffic } from "./traffic.js";
 import { createPedestrians } from "./pedestrians.js";
 import { buildResidentialStreetDetails } from "./streetscape.js";
 import { getHousePlan } from "./house-plans.js";
+import { buildArchitecturalHouse } from "./architectural-house.js";
 import { WORLD_PLAN, assertWorldPlan } from "./world-plan.js";
-
-function addGableEnd(group, name, x, frontZ, rearZ, centerZ, wallHeight, ridgeY, material) {
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute([
-    x, wallHeight, rearZ,
-    x, wallHeight, frontZ,
-    x, ridgeY, centerZ
-  ], 3));
-  geometry.setAttribute("uv", new THREE.Float32BufferAttribute([
-    0, 0,
-    1, 0,
-    0.5, 1
-  ], 2));
-  geometry.computeVertexNormals();
-
-  const gable = new THREE.Mesh(geometry, material);
-  gable.name = name;
-  gable.castShadow = true;
-  gable.receiveShadow = true;
-  group.add(gable);
-  return gable;
-}
 
 function buildHouse(group, colliders, config) {
   const {
@@ -39,182 +17,13 @@ function buildHouse(group, colliders, config) {
   } = config;
   const plan = getHousePlan(planId, seed);
   const entry = plan.entry;
-  const { width, depth } = plan.footprint;
-  const wallHeight = plan.wall.height;
-  const wallThickness = plan.wall.thickness;
-  const halfW = width / 2, halfD = depth / 2;
+  const { depth } = plan.footprint;
+  const halfD = depth / 2;
   const frontZ = centerZ + frontSide * halfD;
-  const rearZ = centerZ - frontSide * halfD;
-  const facadeColor = plan.facade.wallColor;
-  const roofFinish = plan.roof.color;
-  const trimColor = plan.facade.trimColor;
-  const wall = makeSurfaceMaterial("plaster", facadeColor, { roughness: 0.94, bumpScale: 0.022 }, [3.2, 1.25]);
-  const roof = makeSurfaceMaterial("roof-tile", roofFinish, { roughness: 0.91, bumpScale: 0.06 }, [2.3, 3.4]);
-  const gableWall = makeSurfaceMaterial("plaster", facadeColor, { side: THREE.DoubleSide, roughness: 0.94, bumpScale: 0.022 }, [3.2, 1.25]);
-  const trim = makeSurfaceMaterial("wood", trimColor, { roughness: 0.84, bumpScale: 0.018 }, [1.8, 1.2]);
-  const foundation = makeSurfaceMaterial("concrete", 0x777b75, { roughness: 0.96, bumpScale: 0.055 }, [2.8, 2.8]);
 
-  addBox(group, colliders, id + "-foundation", 0, -0.22, centerZ, width + 0.35, 0.22, depth + 0.35, foundation);
-  addBox(group, colliders, id + "-left-wall", -halfW + wallThickness / 2, 0, centerZ, wallThickness, wallHeight, depth, wall, true);
-  addBox(group, colliders, id + "-right-wall", halfW - wallThickness / 2, 0, centerZ, wallThickness, wallHeight, depth, wall, true);
-  const rearWindows = plan.facade.windows.filter(item => item.side === "rear");
-  const rearWindowWidth = rearWindows[0]?.width ?? 1.8;
-  const rearWindowHeight = rearWindows[0]?.height ?? 1.15;
-  const rearWindowY = rearWindows[0]?.y ?? 1.65;
-  addWallWithOpenings(group, colliders, id + "-rear-wall", {
-    minX: -halfW, maxX: halfW, z: rearZ,
-    thickness: wallThickness, height: wallHeight, material: wall,
-    openings: rearWindows.map(item => ({
-      minX: item.x - item.width / 2,
-      maxX: item.x + item.width / 2,
-      minY: item.y - item.height / 2,
-      maxY: item.y + item.height / 2
-    }))
+  buildArchitecturalHouse({
+    group, colliders, id, plan, centerZ, frontSide
   });
-  const rearWindowZ = rearZ - frontSide * (wallThickness / 2 + 0.005);
-  const rearWindowRotation = frontSide > 0 ? Math.PI : 0;
-  rearWindows.forEach(item => addWindow(group, item.x, item.y, rearWindowZ, item.width, item.height, rearWindowRotation));
-
-  const doorLeft = entry.x - entry.width / 2;
-  const doorRight = entry.x + entry.width / 2;
-  const frontWindows = plan.facade.windows.filter(item => item.side === "front");
-  const windowOpening = item => ({
-    minX: item.x - item.width / 2,
-    maxX: item.x + item.width / 2,
-    minY: item.y - item.height / 2,
-    maxY: item.y + item.height / 2
-  });
-
-  addWallWithOpenings(group, colliders, id + "-front-wall-left", {
-    minX: -halfW, maxX: doorLeft, z: frontZ,
-    thickness: wallThickness, height: wallHeight, material: wall,
-    openings: frontWindows.filter(item => item.x < doorLeft).map(windowOpening)
-  });
-  addWallWithOpenings(group, colliders, id + "-front-wall-right", {
-    minX: doorRight, maxX: halfW, z: frontZ,
-    thickness: wallThickness, height: wallHeight, material: wall,
-    openings: frontWindows.filter(item => item.x > doorRight).map(windowOpening)
-  });
-  addBox(group, null, id + "-front-lintel", entry.x, entry.height, frontZ,
-    entry.width, wallHeight - entry.height, wallThickness, wall);
-
-  const roofLayout = createGableRoofLayout({
-    centerZ,
-    halfDepth: halfD,
-    wallHeight,
-    pitch: plan.roof.pitch,
-    panelOverhang: plan.roof.overhang
-  });
-
-  for (const panel of roofLayout.panels) {
-    const roofPanel = new THREE.Mesh(
-      new THREE.BoxGeometry(width + plan.roof.sideOverhang * 2, 0.22, panel.depth),
-      roof
-    );
-    roofPanel.name = id + "-roof-slope-" + (panel.side < 0 ? "negative-z" : "positive-z");
-    roofPanel.position.set(0, panel.centerY, panel.centerZ);
-    roofPanel.rotation.x = panel.rotationX;
-    roofPanel.castShadow = true;
-    roofPanel.receiveShadow = true;
-    group.add(roofPanel);
-
-    // Slim verge boards finish both sloping gable edges without crossing the ridge.
-    for (const edgeX of [-1, 1]) {
-      const verge = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.14, panel.depth), trim);
-      verge.name = id + "-roof-verge-" + (edgeX < 0 ? "left-" : "right-") + (panel.side < 0 ? "north" : "south");
-      verge.position.set(edgeX * (halfW + plan.roof.sideOverhang), panel.centerY, panel.centerZ);
-      verge.rotation.x = panel.rotationX;
-      verge.castShadow = true;
-      verge.receiveShadow = true;
-      group.add(verge);
-    }
-  }
-
-  // A continuous ridge cap hides the join between the two roof planes.
-  const ridgeCap = new THREE.Mesh(
-    new THREE.BoxGeometry(width + plan.roof.sideOverhang * 2 + 0.2, 0.22, 0.34),
-    trim
-  );
-  ridgeCap.name = id + "-roof-ridge-cap";
-  ridgeCap.position.set(0, roofLayout.ridgeY + 0.08, centerZ);
-  ridgeCap.castShadow = true;
-  ridgeCap.receiveShadow = true;
-  group.add(ridgeCap);
-
-  addGableEnd(
-    group, id + "-left-gable", -halfW,
-    frontZ, rearZ, centerZ, wallHeight, roofLayout.ridgeY, gableWall
-  );
-  addGableEnd(
-    group, id + "-right-gable", halfW,
-    frontZ, rearZ, centerZ, wallHeight, roofLayout.ridgeY, gableWall
-  );
-
-  const eaveY = wallHeight - Math.tan(roofLayout.pitch) * plan.roof.overhang;
-  const eaveBaseY = eaveY - 0.09;
-  addBox(
-    group, null, id + "-eaves-front",
-    0, eaveBaseY, frontZ + frontSide * plan.roof.overhang,
-    width + plan.roof.sideOverhang * 2, 0.18, 0.16, trim
-  );
-  addBox(
-    group, null, id + "-eaves-rear",
-    0, eaveBaseY, rearZ - frontSide * plan.roof.overhang,
-    width + plan.roof.sideOverhang * 2, 0.18, 0.16, trim
-  );
-
-  const windowZ = frontZ + frontSide * (wallThickness / 2 + 0.005);
-  const windowRotation = frontSide < 0 ? Math.PI : 0;
-  frontWindows.forEach(item => addWindow(group, item.x, item.y, windowZ, item.width, item.height, windowRotation));
-
-  const sillMaterial = makeSurfaceMaterial("concrete", trimColor, { roughness: 0.84, bumpScale: 0.018 }, [1.2, 1]);
-  for (const [facadeName, facadeZ, outwardSide, windows] of [
-    ["front", windowZ, frontSide, frontWindows],
-    ["rear", rearWindowZ, -frontSide, rearWindows]
-  ]) {
-    windows.forEach((item, index) => {
-      addBox(
-        group, null, id + "-" + facadeName + "-window-sill-" + index,
-        item.x, item.y - item.height / 2 - 0.08, facadeZ + outwardSide * 0.035,
-        item.width + 0.2, 0.12, 0.22, sillMaterial
-      );
-    });
-  }
-
-  // Gutters and downpipes finish the roof edge and anchor its overhang visually.
-  const gutterGeometry = new THREE.CylinderGeometry(0.055, 0.055, width + plan.roof.sideOverhang * 2, 8);
-  const pipeBottomY = 0.05;
-  const gutterY = eaveY - 0.27;
-  const pipeHeight = gutterY - pipeBottomY;
-  const pipeGeometry = new THREE.CylinderGeometry(0.045, 0.045, pipeHeight, 8);
-  const pipeMaterial = makeSurfaceMaterial("metal", 0x626966, { metalness: 0.34, roughness: 0.56, bumpScale: 0.006 }, [1.2, 2.5]);
-  for (const [facadeName, edgeZ, wallZ] of [
-    ["front", frontZ + frontSide * plan.roof.overhang, frontZ + frontSide * (wallThickness / 2 + 0.03)],
-    ["rear", rearZ - frontSide * plan.roof.overhang, rearZ - frontSide * (wallThickness / 2 + 0.03)]
-  ]) {
-    const connectorLength = Math.abs(edgeZ - wallZ);
-    const connectorGeometry = new THREE.CylinderGeometry(0.04, 0.04, connectorLength, 8);
-    const gutter = new THREE.Mesh(gutterGeometry, pipeMaterial);
-    gutter.name = id + "-" + facadeName + "-gutter";
-    gutter.rotation.z = Math.PI / 2;
-    gutter.position.set(0, gutterY, edgeZ);
-    gutter.castShadow = true;
-    group.add(gutter);
-
-    for (const pipeX of [-1, 1].map(side => side * (halfW - 0.35))) {
-      const pipe = new THREE.Mesh(pipeGeometry, pipeMaterial);
-      pipe.name = id + "-" + facadeName + "-downpipe-" + (pipeX < 0 ? "left" : "right");
-      pipe.position.set(pipeX, pipeBottomY + pipeHeight / 2, wallZ);
-      pipe.castShadow = true;
-      group.add(pipe);
-
-      const connector = new THREE.Mesh(connectorGeometry, pipeMaterial);
-      connector.name = id + "-" + facadeName + "-gutter-connector-" + (pipeX < 0 ? "left" : "right");
-      connector.rotation.x = Math.PI / 2;
-      connector.position.set(pipeX, gutterY, (edgeZ + wallZ) / 2);
-      group.add(connector);
-    }
-  }
 
   group.add(buildWindowInteriorPreview({
     id,
@@ -225,38 +34,6 @@ function buildHouse(group, colliders, config) {
     planId,
     seed
   }));
-
-  if (plan.details.porch) {
-    const porch = plan.details.porch;
-    const porchZ = frontZ + frontSide * (entry.path.setback - 1.78);
-    const porchMetal = makeSurfaceMaterial("metal", 0x565b58, { metalness: 0.25, roughness: 0.7, bumpScale: 0.008 }, [1, 3]);
-    addBox(group, null, id + "-porch-canopy", entry.x, porch.height - 0.16, porchZ,
-      porch.width, 0.16, porch.depth, roof);
-    addBox(group, null, id + "-porch-beam", entry.x, porch.height - 0.23,
-      porchZ + frontSide * porch.postOffsetZ, porch.width - 0.25, 0.16, 0.16, trim);
-    for (const postX of [-1, 1].map(side => entry.x + side * porch.postOffsetX)) {
-      addBox(group, colliders, id + "-porch-post", postX, 0,
-        porchZ + frontSide * porch.postOffsetZ, 0.14, porch.postHeight, 0.14, porchMetal, true);
-    }
-  }
-  if (plan.details.entryStep && plan.details.steps) {
-    const steps = plan.details.steps;
-    for (let stepIndex = 0; stepIndex < steps.count; stepIndex += 1) {
-      addBox(group, null, id + "-entry-step-" + stepIndex, entry.x, stepIndex * steps.rise,
-        frontZ + frontSide * (steps.firstOffset + stepIndex * steps.offsetStep),
-        steps.width - stepIndex * 0.18, 0.12, steps.depth, foundation);
-    }
-  }
-  if (plan.details.chimney && plan.details.chimneyPlacement) {
-    const chimneyPlan = plan.details.chimneyPlacement;
-    const chimneyZ = centerZ + frontSide * chimneyPlan.localZ;
-    const roofBaseY = wallHeight + Math.tan(plan.roof.pitch) * (halfD - Math.abs(chimneyPlan.localZ));
-    const chimney = makeSurfaceMaterial("brick", 0x77736b, { roughness: 0.96, bumpScale: 0.065 }, [1.8, 2.4]);
-    addBox(group, null, id + "-chimney", chimneyPlan.x, roofBaseY, chimneyZ,
-      chimneyPlan.width, chimneyPlan.height, chimneyPlan.width, chimney);
-    addBox(group, null, id + "-chimney-cap", chimneyPlan.x, roofBaseY + chimneyPlan.height,
-      chimneyZ, chimneyPlan.capWidth, chimneyPlan.capHeight, chimneyPlan.capWidth, trim);
-  }
 
   const door = createDoor(group, colliders, {
     id: id + "-front-door", x: entry.x, z: frontZ,
