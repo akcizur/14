@@ -45,7 +45,7 @@ Open the Vite-served `/city-courier/` route. Do not open the page through `file:
 - Three weapons with distinct cadence, spread, pellet count, range, stun and synthesized audio
 - A 90-second day/night cycle in missions and Open World, including 16 functional street lamps
 - Vehicle wheel rotation where source models expose wheel nodes, plus night marker lights and brake lamps
-- Local two-driver split-screen with independent keyboard controls and cameras; P2 has an independent SUV and is driver-only in this milestone
+- Local two-driver split-screen with independent keyboard controls and cameras; P2 has an independent SUV and is driver-only in this milestone; local only, with no network synchronization
 
 ## Validation
 
