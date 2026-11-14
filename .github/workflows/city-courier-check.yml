@@ -1,0 +1,28 @@
+name: City Courier validation
+
+on:
+  push:
+    branches: [city-courier]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install
+      - name: Validate tests and extracted GLB assets
+        run: npm test
+      - name: Fetch the main world's PBR assets
+        run: npm run assets:pbr
+      - name: Build the site including City Courier
+        run: npm run build
