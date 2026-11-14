@@ -69,6 +69,8 @@ test("Local split-screen has separate controls, cameras and a shared mission", a
   assert.match(engine, /const map=splitMode\?p1map:kmap/);
   assert.match(mission, /function startSplit\(\)/);
   assert.match(mission, /const acc2=keys2\.up-keys2\.down/);
+  assert.match(mission, /player2\.collider=\{/);
+  assert.match(mission, /col\.push\(player2\.collider\)/);
   assert.match(mission, /d2<4\.4/);
   assert.match(loop, /R\.setScissorTest\(true\)/);
   assert.match(loop, /R\.render\(S,C2\)/);

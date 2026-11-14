@@ -45,6 +45,7 @@ function clearAll(){cops.forEach(c=>{S.remove(c.m);forgetCarModel(c.m)});cops.le
 function start(free){
  clearAll();
  if(player2.m){S.remove(player2.m);forgetCarModel(player2.m);player2.m=null}
+ if(player2.collider){const colliderIndex=col.indexOf(player2.collider);if(colliderIndex>=0)col.splice(colliderIndex,1);player2.collider=null}
  player2.active=false;splitMode=false;
  $('splitHud').style.display='none';$('splitDivider').style.display='none';$('arr').style.display='';
  Object.assign(keys,{up:0,down:0,left:0,right:0});Object.assign(keys2,{up:0,down:0,left:0,right:0});
@@ -62,6 +63,7 @@ function startSplit(){
  Object.assign(player2,{active:true,x:6.5,z:0,h:0,v:0});
  player2.m=carModel('SUV',0x16a6a6,4.8);
  player2.m.position.set(player2.x,0,player2.z);player2.m.rotation.y=player2.h;S.add(player2.m);
+ player2.collider={x:player2.x,z:player2.z,hw:2,hd:2};col.push(player2.collider);
  $('splitHud').style.display='flex';$('splitDivider').style.display='block';$('arr').style.display='none';
  resize();showSplitToast();
 }
@@ -101,6 +103,7 @@ function update(dt){
  player.x+=Math.sin(player.h)*player.v*dt;player.z+=Math.cos(player.h)*player.v*dt;
  if(collide(player,1.7))player.v*=.7;
  if(player2.active){
+  const colliderIndex=player2.collider?col.indexOf(player2.collider):-1;if(colliderIndex>=0)col.splice(colliderIndex,1);
   const acc2=keys2.up-keys2.down,st2=keys2.left-keys2.right;
   if(acc2>0)player2.v+=22*dt;else if(acc2<0)player2.v-=28*dt;else player2.v-=Math.sign(player2.v)*Math.min(Math.abs(player2.v),10*dt);
   player2.v=clamp(player2.v,-10,MAX);player2.h+=st2*2.3*dt*clamp(player2.v/8,-1,1);
@@ -112,6 +115,7 @@ function update(dt){
    player.x-=nx*push;player.z-=nz*push;player2.x+=nx*push;player2.z+=nz*push;
    collide(player,1.7);collide(player2,1.7);player.v*=.65;player2.v*=.65;
   }
+  if(player2.collider){player2.collider.x=player2.x;player2.collider.z=player2.z;col.push(player2.collider)}
  }
  if(fps.on)fpsStep(dt);
  cops.forEach(c=>copStep(c,dt));
