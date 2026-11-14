@@ -31,7 +31,7 @@ Open the Vite-served `/city-courier/` route. Do not open the page through `file:
 
 - Single player: WASD or arrow keys to drive and walk
 - Split-screen: P1 uses WASD; P2 uses arrow keys
-- In split-screen both players drive separate cars, share parcels, score, time and lives, and police pursue the nearest driver
+- In split-screen both players drive separate cars, share parcels, score, time and lives, and police pursue the nearest driver; P2 is currently driver-only
 - Mouse: look around in first-person mode; hold left mouse to fire
 - E: P1 enters or leaves a vehicle
 - V: switch P1 between first- and third-person camera

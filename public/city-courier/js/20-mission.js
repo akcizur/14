@@ -47,7 +47,7 @@ function start(free){
  if(player2.m){S.remove(player2.m);forgetCarModel(player2.m);player2.m=null}
  if(player2.collider){const colliderIndex=col.indexOf(player2.collider);if(colliderIndex>=0)col.splice(colliderIndex,1);player2.collider=null}
  player2.active=false;splitMode=false;
- $('splitHud').style.display='none';$('splitDivider').style.display='none';$('arr').style.display='';
+ $('splitHud').style.display='none';$('splitDivider').style.display='none';$('arr').style.display='';$('hint').textContent='V – pohled · E – auto · 1/2/3 – zbraně · klik – střelba';
  Object.assign(keys,{up:0,down:0,left:0,right:0});Object.assign(keys2,{up:0,down:0,left:0,right:0});
  resize();
  tod=free?.28:.3;
@@ -64,7 +64,7 @@ function startSplit(){
  player2.m=carModel('SUV',0x16a6a6,4.8);
  player2.m.position.set(player2.x,0,player2.z);player2.m.rotation.y=player2.h;S.add(player2.m);
  player2.collider={x:player2.x,z:player2.z,hw:2,hd:2};col.push(player2.collider);
- $('splitHud').style.display='flex';$('splitDivider').style.display='block';$('arr').style.display='none';
+ $('splitHud').style.display='flex';$('splitDivider').style.display='block';$('arr').style.display='none';$('hint').textContent='P1 WASD · P2 ŠIPKY · SDÍLENÉ BALÍKY · E / V / ZBRANĚ: P1';
  resize();showSplitToast();
 }
 function showSplitToast(){flash('Dva řidiči: P1 WASD · P2 šipky')}function over(why){G.state='over';document.exitPointerLock&&document.exitPointerLock();fps.on=false;triggerDown=false;gun.visible=false;$('xh').style.display='none';
@@ -146,7 +146,7 @@ function update(dt){
   }
  }
 }
-function hud(){if(splitMode){$('p1Status').textContent='P1 · '+Math.round(Math.abs(player.v)*3.6)+' km/h';$('p2Status').textContent='P2 · '+Math.round(Math.abs(player2.v)*3.6)+' km/h';}let nb=null,nd=1e9;for(const p of parcels){const d=Math.hypot(p.x-who().x,p.z-who().z);if(d<nd){nd=d;nb=p}}if(nb){$('ai').style.transform='rotate('+(-90-wrap(Math.atan2(nb.x-who().x,nb.z-who().z)-(fps.on?fps.yaw:player.h))*57.3)+'deg)';$('ad').textContent=Math.round(nd)+' m'}$('hs').textContent='Skóre '+G.score;$('ht').textContent=G.free?clockStr():'Čas '+Math.max(0,Math.ceil(G.time));$('hl').textContent=G.free?('★'.repeat(G.wanted||0)||'Bez hledání'):'♥'.repeat(Math.max(0,G.lives));$('hv').textContent=G.free?'Open World':'Level '+G.level;$('hp').textContent=G.free?(camMode?'1. osoba':'3. osoba'):'Balíky '+G.got+'/6';$('hw').textContent='Zbraň '+(weaponIndex+1)+' · '+WEAPONS[weaponIndex].name}
+function hud(){if(splitMode){$('p1Status').textContent='P1 WASD · '+Math.round(Math.abs(player.v)*3.6)+' km/h';$('p2Status').textContent='P2 ŠIPKY · '+Math.round(Math.abs(player2.v)*3.6)+' km/h';}let nb=null,nd=1e9;for(const p of parcels){const d=Math.hypot(p.x-who().x,p.z-who().z);if(d<nd){nd=d;nb=p}}if(nb){$('ai').style.transform='rotate('+(-90-wrap(Math.atan2(nb.x-who().x,nb.z-who().z)-(fps.on?fps.yaw:player.h))*57.3)+'deg)';$('ad').textContent=Math.round(nd)+' m'}$('hs').textContent='Skóre '+G.score;$('ht').textContent=G.free?clockStr():'Čas '+Math.max(0,Math.ceil(G.time));$('hl').textContent=G.free?('★'.repeat(G.wanted||0)||'Bez hledání'):'♥'.repeat(Math.max(0,G.lives));$('hv').textContent=G.free?'Open World':'Level '+G.level;$('hp').textContent=G.free?(camMode?'1. osoba':'3. osoba'):'Balíky '+G.got+'/6';$('hw').textContent='Zbraň '+(weaponIndex+1)+' · '+WEAPONS[weaponIndex].name}
 const mc=$('mm').getContext('2d'),MS=150/350,mx=x=>75-x*MS,mz=z=>75-z*MS;
 function minimap(){mc.clearRect(0,0,150,150);mc.fillStyle='#4a5260';blocks.forEach(([x,z])=>mc.fillRect(mx(x)-14*MS,mz(z)-14*MS,28*MS,28*MS));
  mc.fillStyle='#ffc83d';parcels.forEach(p=>{mc.beginPath();mc.arc(mx(p.x),mz(p.z),3,0,7);mc.fill()});
