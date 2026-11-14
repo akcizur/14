@@ -71,7 +71,9 @@ test("Local split-screen has separate controls, cameras and a shared mission", a
   assert.match(engine, /const p2map=\{ArrowUp:'up'/);
   assert.match(engine, /const map=splitMode\?p1map:kmap/);
   assert.match(mission, /function startSplit\(\)/);
-  assert.match(mission, /const acc2=keys2\.up-keys2\.down/);
+  assert.match(mission, /CourierDriving\.stepVehicle\(player,fps\.on\?null:keys,dt,MAX\)/);
+  assert.match(mission, /CourierDriving\.stepVehicle\(player2,keys2,dt,MAX\)/);
+  assert.match(mission, /CourierDriving\.separatePlayers\(player,player2,3\.4\)/);
   assert.match(mission, /player2\.collider=\{/);
   assert.match(mission, /col\.push\(player2\.collider\)/);
   assert.match(mission, /d2<4\.4/);
