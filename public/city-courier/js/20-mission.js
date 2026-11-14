@@ -70,7 +70,9 @@ function startSplit(){
 function showSplitToast(){flash('Dva řidiči: P1 WASD · P2 šipky')}function over(why){G.state='over';document.exitPointerLock&&document.exitPointerLock();fps.on=false;triggerDown=false;gun.visible=false;$('xh').style.display='none';
  if(G.score>best){best=G.score;try{localStorage.setItem('akc14best',best)}catch(e){}}
  if(!G.free)saveMissionScore();refreshScores();
- $('msg').innerHTML=why+'<br><br>Skóre: <b>'+G.score+'</b> · Level '+G.level+' · Rekord: '+best;$('go').textContent='Hrát znovu';$('ov').style.display='flex'}
+ $('msg').innerHTML=why+'<br><br>Skóre: <b>'+G.score+'</b> · Level '+G.level+' · Rekord: '+best;
+ $('go').textContent='Hrát znovu';$('go').onclick=()=>{if(splitMode)startSplit();else start(false)};
+ $('splitHud').style.display='none';$('splitDivider').style.display='none';$('ov').style.display='flex'}
 function copStep(c,dt){
  if(c.stun>0){c.speed=0;c.stun-=dt;if(c.stun<=0)c.m.rotation.z=0;return}
  const sp=13+G.level*1.3;c.speed=sp;c.x+=c.dx*sp*dt;c.z+=c.dz*sp*dt;
