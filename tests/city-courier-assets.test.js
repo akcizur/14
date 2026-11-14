@@ -55,3 +55,22 @@ test("Street lamps are connected to the day/night cycle", async () => {
   assert.match(world, /streetLights\.forEach/);
   assert.match(world, /light\.intensity=night\*1\.65/);
 });
+
+
+test("Local split-screen has separate controls, cameras and a shared mission", async () => {
+  const engine = await readFile(new URL("../public/city-courier/js/00-engine.js", import.meta.url), "utf8");
+  const mission = await readFile(new URL("../public/city-courier/js/20-mission.js", import.meta.url), "utf8");
+  const loop = await readFile(new URL("../public/city-courier/js/50-loop.js", import.meta.url), "utf8");
+  const html = await readFile(new URL("../public/city-courier/index.html", import.meta.url), "utf8");
+
+  assert.match(engine, /const C2=new THREE\.PerspectiveCamera/);
+  assert.match(engine, /const p1map=\{KeyW:'up'/);
+  assert.match(engine, /const p2map=\{ArrowUp:'up'/);
+  assert.match(mission, /function startSplit\(\)/);
+  assert.match(mission, /const acc2=keys2\.up-keys2\.down/);
+  assert.match(mission, /d2<4\.4/);
+  assert.match(loop, /R\.setScissorTest\(true\)/);
+  assert.match(loop, /R\.render\(S,C2\)/);
+  assert.match(html, /id="go3"/);
+  assert.match(html, /id="splitDivider"/);
+});

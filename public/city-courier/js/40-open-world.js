@@ -36,7 +36,8 @@ function respawnPed(p){p.ax=Math.random()<.5?0:1;p.line=Math.round(rnd(-4,4))*P+
 function pedStep(p,dt){if(p.dead>0){p.dead-=dt;if(p.dead<=0)respawnPed(p);return}
  p.pos+=p.dir*p.sp*dt;if(p.pos>p.b){p.pos=p.b;p.dir=-1}else if(p.pos<p.a){p.pos=p.a;p.dir=1}
  const x=p.ax?p.pos:p.line,z=p.ax?p.line:p.pos;p.x=x;p.z=z;p.m.position.set(x,.3,z);p.m.rotation.y=p.ax?(p.dir>0?Math.PI/2:-Math.PI/2):(p.dir>0?0:Math.PI);
- if(dt>0&&!fps.on&&Math.abs(player.v)>4&&Math.hypot(x-player.x,z-player.z)<2.4)killPed(p)}
+ if(dt>0&&!fps.on&&Math.abs(player.v)>4&&Math.hypot(x-player.x,z-player.z)<2.4)killPed(p);
+ if(dt>0&&player2.active&&Math.abs(player2.v)>4&&Math.hypot(x-player2.x,z-player2.z)<2.4)killPed(p)}
 function killPed(p){if(p.dead>0)return;p.dead=5;charAnim(p.c,'death');if(G.free)wantedUp(1)}
 function wantedUp(n){G.wanted=Math.min(3,G.wanted+n);G.wt=30;while(cops.length<G.wanted)spawnCop();flash('Hledaný: '+'★'.repeat(G.wanted))}
 const VT=[['Car',4.3,0x2a6fd6],['SUV',4.8,0x444444],['Pickup Truck',5.2,0xaa3322],['Van',5.2,0xdddddd],['Sports Car',4.3,0xe0b020],['Bus',9,0xe0a020],['Car',4.3,0x22aa55]];

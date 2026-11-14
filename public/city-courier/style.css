@@ -18,3 +18,8 @@ canvas{display:block}#arr{position:fixed;top:calc(clamp(44px,3.6vw,76px) + env(s
 #scoreList{margin:0;padding-left:24px;display:grid;grid-template-columns:1fr 1fr;gap:4px 18px;font-size:13px;color:#e4eaf2}
 #scoreList li{padding-right:4px}
 @media(max-width:520px){#scoreList{grid-template-columns:1fr}#scores{max-height:125px}#ov h1{font-size:27px}}
+
+#splitHud{position:fixed;top:calc(44px + env(safe-area-inset-top,0px));left:0;right:0;z-index:20;display:none;justify-content:space-between;gap:12px;padding:0 2vw;pointer-events:none}
+#splitHud span{background:rgba(10,15,25,.72);color:#fff;padding:6px 12px;border-radius:7px;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+#splitDivider{position:fixed;z-index:19;top:0;bottom:0;left:50%;width:3px;display:none;transform:translateX(-1px);background:rgba(255,255,255,.7);box-shadow:0 0 0 1px rgba(0,0,0,.25);pointer-events:none}
+@media(max-width:700px){#splitHud span{font-size:10px;padding:5px 7px}}

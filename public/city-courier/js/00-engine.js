@@ -6,17 +6,30 @@ const R=new THREE.WebGLRenderer({antialias:true});R.setPixelRatio(Math.min(devic
 document.body.prepend(R.domElement);
 const S=new THREE.Scene();S.background=new THREE.Color(0x9ec7e8);S.fog=new THREE.Fog(0x9ec7e8,90,280);
 const C=new THREE.PerspectiveCamera(60,1,.1,400);
+const C2=new THREE.PerspectiveCamera(60,1,.1,400);
+const player2={active:false,x:0,z:0,h:0,v:0,m:null};
+let splitMode=false;
 const hemi=new THREE.HemisphereLight(0xffffff,0x556677,.95);S.add(hemi);
 const sun=new THREE.DirectionalLight(0xfff2d6,1.1);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.bias=-.0005;sun.shadow.normalBias=.05;
 const sc=sun.shadow.camera;sc.left=sc.bottom=-70;sc.right=sc.top=70;sc.far=300;S.add(sun,sun.target);
-function resize(){R.setSize(innerWidth,innerHeight);C.aspect=innerWidth/innerHeight;C.updateProjectionMatrix()}
+function resize(){R.setSize(innerWidth,innerHeight);const aspect=splitMode?Math.max(1,innerWidth/2)/Math.max(1,innerHeight):innerWidth/innerHeight;C.aspect=aspect;C.updateProjectionMatrix();C2.aspect=Math.max(1,innerWidth/2)/Math.max(1,innerHeight);C2.updateProjectionMatrix()}
 addEventListener('resize',resize);resize();
 
 // ---- ovládání
-const keys={up:0,down:0,left:0,right:0};
+const keys={up:0,down:0,left:0,right:0},keys2={up:0,down:0,left:0,right:0};
 const kmap={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
-addEventListener('keydown',e=>{if(kmap[e.code]){keys[kmap[e.code]]=1;e.preventDefault()}if(e.code==='KeyF')flip();if(e.code==='KeyE')toggleFps();if(e.code==='KeyV')camMode^=1;if(e.code==='Digit1')selectWeapon(0);if(e.code==='Digit2')selectWeapon(1);if(e.code==='Digit3')selectWeapon(2);if(e.code==='Enter'&&G.state!=='play'&&!$('go').disabled)start()});
-addEventListener('keyup',e=>{if(kmap[e.code])keys[kmap[e.code]]=0});
+const p1map={KeyW:'up',KeyS:'down',KeyA:'left',KeyD:'right'};
+const p2map={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'};
+addEventListener('keydown',e=>{
+ const map=splitMode?p1map:kmap;
+ if(map[e.code]){keys[map[e.code]]=1;e.preventDefault()}
+ if(splitMode&&p2map[e.code]){keys2[p2map[e.code]]=1;e.preventDefault()}
+ if(e.code==='KeyF')flip();if(e.code==='KeyE')toggleFps();if(e.code==='KeyV')camMode^=1;
+ if(e.code==='Digit1')selectWeapon(0);if(e.code==='Digit2')selectWeapon(1);if(e.code==='Digit3')selectWeapon(2);
+ if(e.code==='Enter'&&G.state!=='play'&&!$('go').disabled){if(splitMode)startSplit();else start(false)}
+});
+addEventListener('keyup',e=>{if(kmap[e.code])keys[kmap[e.code]]=0;if(p2map[e.code])keys2[p2map[e.code]]=0});
+addEventListener('blur',()=>{Object.assign(keys,{up:0,down:0,left:0,right:0});Object.assign(keys2,{up:0,down:0,left:0,right:0})});
 document.querySelectorAll('[data-k]').forEach(b=>{const k=b.dataset.k;b.addEventListener('pointerdown',e=>{keys[k]=1;e.preventDefault()});
  ['pointerup','pointerleave','pointercancel'].forEach(t=>b.addEventListener(t,()=>keys[k]=0))});
 
@@ -63,11 +76,11 @@ function forgetCarModel(model){const i=carModels.indexOf(model);if(i>=0)carModel
 function updateCarAnimations(dt,t){
  carModels.forEach(car=>{
   const cop=cops.find(c=>c.m===car);
-  const speed=car===player.m?(fps.on?0:player.v):(cop?.speed||0);
+  const speed=car===player.m?(fps.on?0:player.v):car===player2.m?player2.v:(cop?.speed||0);
   if(Math.abs(speed)>.15)car.userData.wheels.forEach(wheel=>{wheel.rotation.x-=speed*dt/.34});
   const body=car.userData.body;
   if(body)body.position.y=Math.abs(speed)>.8?Math.sin(t*.016+car.id)*.018*Math.min(1,Math.abs(speed)/8):0;
-  const braking=car===player.m&&(keys.down||player.v<-.5);
+  const braking=(car===player.m&&(keys.down||player.v<-.5))||(car===player2.m&&(keys2.down||player2.v<-.5));
   car.userData.brakeLights.forEach(light=>{light.visible=braking});
  });
 }

@@ -3,13 +3,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="stylesheet" href="./style.css"></head><body>
 <div id="hud"><span id="hs">Skóre 0</span><span id="ht">Čas 90</span><span id="hl">♥♥♥</span><span id="hv">Level 1</span><span id="hp">Balíky 0/6</span><span id="hw">Zbraň 1 · PISTOLE</span></div>
+<div id="splitHud"><span id="p1Status">P1 · 0 km/h</span><span id="p2Status">P2 · 0 km/h</span></div>
+<div id="splitDivider" aria-hidden="true"></div>
 <canvas id="mm" width="150" height="150"></canvas>
 <div id="xh"></div><div id="toast"></div><div id="hint">V – pohled 1./3. osoba · E – auto · 1/2/3 – zbraně · drž klik – střelba</div><div id="arr"><b id="ai">➤</b> <span id="ad"></span></div>
 <div id="pad"><span></span><button data-k="up">▲</button><span></span><button data-k="left">◀</button><button data-k="down">▼</button><button data-k="right">▶</button></div>
 <div id="ov"><h1>Akcizur 14 – City Courier</h1>
-<p id="msg">Sbírej žluté balíky v ulicích města, než vyprší čas. Policejní auta tě pronásledují po silnicích – nenech se chytit!<br><br>Řízení: šipky nebo WASD. Na mobilu tlačítka vlevo dole.<br>FPS: klávesa E = vystoupit z auta / nastoupit (do 7 m od auta). Myš = rozhlížení, klik = střelba (zasažený policista se na 5 s složí), Shift = sprint, mezerník = skok.<br>V = přepnutí 1. / 3. osoby (v autě i pěšky). Čísla 1/2/3 mění pistoli, SMG a brokovnici. Open World: volné řádění bez limitů – nasedej do dalších aut (E), střílej, ale pozor na policii (★) při střelbě a přejetí chodců.</p>
+<p id="msg">Sbírej žluté balíky v ulicích města, než vyprší čas. Policejní auta tě pronásledují po silnicích – nenech se chytit!<br><br>Řízení: šipky nebo WASD. Na mobilu tlačítka vlevo dole.<br>FPS: klávesa E = vystoupit z auta / nastoupit (do 7 m od auta). Myš = rozhlížení, klik = střelba (zasažený policista se na 5 s složí), Shift = sprint, mezerník = skok.<br>V = přepnutí 1. / 3. osoby (v autě i pěšky). Čísla 1/2/3 mění pistoli, SMG a brokovnici. Split-screen: P1 WASD, P2 šipky, společné balíky a policie. Open World: volné řádění bez limitů – nasedej do dalších aut (E), střílej, ale pozor na policii (★) při střelbě a přejetí chodců.</p>
 <button class="btn" id="go" disabled>Načítám modely…</button>
 <button class="btn" id="go2" disabled style="background:#5cd0ff">Open World – volné řádění</button>
+<button class="btn" id="go3" disabled style="background:#67dab4">Split-screen · 2 řidiči</button>
 <button class="btn alt" id="fl">↻ Otočit modely aut (F)</button><section id="scores"><h2>Lokální TOP 10</h2><ol id="scoreList"></ol></section></div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js"></script>
