@@ -64,6 +64,8 @@ test("Local split-screen has separate controls, cameras and a shared mission", a
   const html = await readFile(new URL("../public/city-courier/index.html", import.meta.url), "utf8");
 
   assert.match(engine, /const C2=new THREE\.PerspectiveCamera/);
+  assert.match(engine, /w\.userData\.animPhase=carModels\.length\*\.73/);
+  assert.match(engine, /car\.userData\.animPhase/);
   assert.match(engine, /const p1map=\{KeyW:'up'/);
   assert.match(engine, /const p2map=\{ArrowUp:'up'/);
   assert.match(engine, /const map=splitMode\?p1map:kmap/);

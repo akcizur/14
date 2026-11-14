@@ -67,7 +67,7 @@ function carModel(k,col,len){
   const brake=new THREE.Mesh(lampGeometry,new THREE.MeshBasicMaterial({color:0xff1717}));
   brake.position.set(x,.34,size*.46);brake.visible=false;g.add(brake);brakeLights.push(brake);
  }
- w.userData.body=g;w.userData.wheels=g.userData.wheels||[];
+ w.userData.body=g;w.userData.animPhase=carModels.length*.73;w.userData.wheels=g.userData.wheels||[];
  w.userData.headlights=headlights;w.userData.taillights=taillights;w.userData.brakeLights=brakeLights;
  carModels.push(w);return w;
 }
@@ -79,7 +79,7 @@ function updateCarAnimations(dt,t){
   const speed=car===player.m?(fps.on?0:player.v):car===player2.m?player2.v:(cop?.speed||0);
   if(Math.abs(speed)>.15)car.userData.wheels.forEach(wheel=>{wheel.rotation.x-=speed*dt/.34});
   const body=car.userData.body;
-  if(body)body.position.y=Math.abs(speed)>.8?Math.sin(t*.016+car.id)*.018*Math.min(1,Math.abs(speed)/8):0;
+  if(body)body.position.y=Math.abs(speed)>.8?Math.sin(t*.016+car.userData.animPhase)*.018*Math.min(1,Math.abs(speed)/8):0;
   const braking=(car===player.m&&(keys.down||player.v<-.5))||(car===player2.m&&(keys2.down||player2.v<-.5));
   car.userData.brakeLights.forEach(light=>{light.visible=braking});
  });
