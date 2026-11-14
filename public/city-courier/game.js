@@ -15,7 +15,7 @@ addEventListener('resize',resize);resize();
 // ---- ovládání
 const keys={up:0,down:0,left:0,right:0};
 const kmap={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
-addEventListener('keydown',e=>{if(kmap[e.code]){keys[kmap[e.code]]=1;e.preventDefault()}if(e.code==='KeyF')flip();if(e.code==='KeyE')toggleFps();if(e.code==='KeyV')camMode^=1;if(e.code==='Enter'&&G.state!=='play'&&!$('go').disabled)start()});
+addEventListener('keydown',e=>{if(kmap[e.code]){keys[kmap[e.code]]=1;e.preventDefault()}if(e.code==='KeyF')flip();if(e.code==='KeyE')toggleFps();if(e.code==='KeyV')camMode^=1;if(e.code==='Digit1')selectWeapon(0);if(e.code==='Digit2')selectWeapon(1);if(e.code==='Digit3')selectWeapon(2);if(e.code==='Enter'&&G.state!=='play'&&!$('go').disabled)start()});
 addEventListener('keyup',e=>{if(kmap[e.code])keys[kmap[e.code]]=0});
 document.querySelectorAll('[data-k]').forEach(b=>{const k=b.dataset.k;b.addEventListener('pointerdown',e=>{keys[k]=1;e.preventDefault()});
  ['pointerup','pointerleave','pointercancel'].forEach(t=>b.addEventListener(t,()=>keys[k]=0))});
@@ -43,7 +43,7 @@ function fit(k,t,col){
 }
 let flipA=0;const carInners=[],carModels=[];
 function carModel(k,col,len){
- const size=len||4.3,g=fit(k,size,col),w=new THREE.Group();w.add(g);g.rotation.y=flipA;carInners.push(g);
+ const size=len||4.3,g=fit(k,size,col),w=new THREE.Group();w.add(g);w.userData.len=size;g.rotation.y=flipA;carInners.push(g);
  const headlights=[],taillights=[],brakeLights=[];
  const lampGeometry=new THREE.BoxGeometry(.22,.1,.045);
  for(const x of [-.48,.48]){
@@ -70,6 +70,7 @@ function updateCarAnimations(dt,t){
   const braking=car===player.m&&(keys.down||player.v<-.5);
   car.userData.brakeLights.forEach(light=>{light.visible=braking});
  });
+}
 $('fl').onclick=flip;
 
 // ---- město
@@ -132,7 +133,7 @@ function spawnParcel(){let x,z;do{[x,z]=roadPos()}while(Math.hypot(x-player.x,z-
 function spawnCop(){let best=null,bd=-1;for(const [x,z] of [[-160,-160],[160,-160],[-160,160],[160,160]]){const d=Math.hypot(x-player.x,z-player.z);if(d>bd){bd=d;best=[x,z]}}
  const m=carModel('Police Car',0x2255cc);S.add(m);cops.push({x:best[0],z:best[1],dx:best[0]>0?-1:1,dz:0,h:0,lx:null,lz:null,m})}
 function clearAll(){cops.forEach(c=>{S.remove(c.m);forgetCarModel(c.m)});cops.length=0;parcels.forEach(p=>S.remove(p.m));parcels.length=0}
-function start(free){clearAll();tod=free?.28:.3;Object.assign(G,{state:'play',score:0,lives:3,level:1,got:0,time:90,inv:2,free:!!free,wanted:0,wt:0});unparkOwn();Object.assign(player,{x:0,z:0,h:0,v:0});fps.on=false;gun.visible=false;$('xh').style.display='none';
+function start(free){clearAll();tod=free?.28:.3;Object.assign(G,{state:'play',score:0,lives:3,level:1,got:0,time:90,inv:2,free:!!free,wanted:0,wt:0});unparkOwn();Object.assign(player,{x:0,z:0,h:0,v:0});fps.on=false;triggerDown=false;gun.visible=false;$('xh').style.display='none';
  if(!free)spawnCop();for(let i=0;i<(free?10:4);i++)spawnParcel();$('ov').style.display='none';C.position.set(0,8,-14)}
 function over(why){G.state='over';document.exitPointerLock&&document.exitPointerLock();fps.on=false;triggerDown=false;gun.visible=false;$('xh').style.display='none';
  if(G.score>best){best=G.score;try{localStorage.setItem('akc14best',best)}catch(e){}}
@@ -319,4 +320,4 @@ function loop(t){requestAnimationFrame(loop);const dt=Math.min(.05,(t-last)/1000
  sun.position.set(who().x+sunO[0],sunO[1],who().z+sunO[2]);sun.target.position.set(who().x,0,who().z);
  hud();minimap();R.render(S,C)}
 window.COURIER_ASSETS_READY.then(manifest=>{ASSETS=manifest;return loadAll()}).then(()=>{buildCity();player.m=carModel('Sports Car',0xd22030);S.add(player.m);{const c=fitChar('Man',1.8);pm=c.g;pmc=c;S.add(pm);pm.visible=false;chars.push(c);charAnim(c,'idle')}buildVehicles();buildPeds();
- const b=$('go');b.disabled=false;b.textContent='Start';b.onclick=()=>start(false);const b2=$('go2');b2.disabled=false;b2.onclick=()=>start(true);requestAnimationFrame(loop)});
+ const b=$('go');b.disabled=false;b.textContent='Start';b.onclick=()=>start(false);const b2=$('go2');b2.disabled=false;b2.onclick=()=>start(true);requestAnimationFrame(loop)}).catch(error=>{console.error('[City Courier] Startup failed:',error);$('msg').textContent='Hru se nepodařilo načíst. Obnov stránku a zkontroluj připojení.'});
