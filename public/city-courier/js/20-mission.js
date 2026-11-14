@@ -97,22 +97,13 @@ function update(dt){
   if(G.wt<=0){G.wanted=0;cops.forEach(k=>{S.remove(k.m);forgetCarModel(k.m)});cops.length=0;flash('Policie tě ztratila z dohledu')}
  }
  peds.forEach(p=>pedStep(p,dt));
- const acc=fps.on?0:keys.up-keys.down,st=fps.on?0:keys.left-keys.right;
- if(acc>0)player.v+=22*dt;else if(acc<0)player.v-=28*dt;else player.v-=Math.sign(player.v)*Math.min(Math.abs(player.v),10*dt);
- player.v=clamp(player.v,-10,MAX);player.h+=st*2.3*dt*clamp(player.v/8,-1,1);
- player.x+=Math.sin(player.h)*player.v*dt;player.z+=Math.cos(player.h)*player.v*dt;
+ CourierDriving.stepVehicle(player,fps.on?null:keys,dt,MAX);
  if(collide(player,1.7))player.v*=.7;
  if(player2.active){
   const colliderIndex=player2.collider?col.indexOf(player2.collider):-1;if(colliderIndex>=0)col.splice(colliderIndex,1);
-  const acc2=keys2.up-keys2.down,st2=keys2.left-keys2.right;
-  if(acc2>0)player2.v+=22*dt;else if(acc2<0)player2.v-=28*dt;else player2.v-=Math.sign(player2.v)*Math.min(Math.abs(player2.v),10*dt);
-  player2.v=clamp(player2.v,-10,MAX);player2.h+=st2*2.3*dt*clamp(player2.v/8,-1,1);
-  player2.x+=Math.sin(player2.h)*player2.v*dt;player2.z+=Math.cos(player2.h)*player2.v*dt;
+  CourierDriving.stepVehicle(player2,keys2,dt,MAX);
   if(collide(player2,1.7))player2.v*=.7;
-  const dx=player2.x-player.x,dz=player2.z-player.z,d=Math.hypot(dx,dz),minimum=3.4;
-  if(d<minimum){
-   const nx=d>.001?dx/d:1,nz=d>.001?dz/d:0,push=(minimum-d)*.5;
-   player.x-=nx*push;player.z-=nz*push;player2.x+=nx*push;player2.z+=nz*push;
+  if(CourierDriving.separatePlayers(player,player2,3.4)){
    collide(player,1.7);collide(player2,1.7);player.v*=.65;player2.v*=.65;
   }
   if(player2.collider){player2.collider.x=player2.x;player2.collider.z=player2.z;col.push(player2.collider)}

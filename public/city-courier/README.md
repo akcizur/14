@@ -9,6 +9,7 @@ A separate arcade game mode extracted from the uploaded single-file City Courier
 - `assets.js`: validates and loads the model manifest.
 - `assets/manifest.json`: mapping from model names to GLB files.
 - `assets/models/`: 32 independently cacheable GLB assets.
+- `js/05-driving-rules.js`: pure, shared vehicle movement and player-separation rules, covered by unit tests.
 - `js/00-engine.js`: renderer, shared state, model factories and keyboard input.
 - `js/10-city.js`: procedural city, collision geometry and street lamps.
 - `js/20-mission.js`: mission state, two-player driving, parcels, police and HUD.
@@ -16,7 +17,7 @@ A separate arcade game mode extracted from the uploaded single-file City Courier
 - `js/40-open-world.js`: pedestrians, vehicles, day/night lighting and Open World systems.
 - `js/50-loop.js`: animation loop, split viewports, rendering and startup.
 
-The runtime files remain ordered classic scripts. This preserves the existing shared global state while establishing boundaries for a later dependency-safe ES-module refactor.
+The runtime files remain ordered classic scripts. The shared driving rules load first so single-player and split-screen use exactly the same tested movement logic. This preserves the existing shared global state while establishing boundaries for a later dependency-safe ES-module refactor.
 
 ## Run locally
 

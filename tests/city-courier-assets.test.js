@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { Script } from "node:vm";
+import { Script, runInNewContext } from "node:vm";
 
 const manifestUrl = new URL("../public/city-courier/assets/manifest.json", import.meta.url);
 
@@ -20,6 +20,7 @@ test("City Courier model manifest points to 32 valid GLB files", async () => {
 
 const gameRoot = new URL("../public/city-courier/", import.meta.url);
 const runtimeFiles = [
+  "js/05-driving-rules.js",
   "js/00-engine.js",
   "js/10-city.js",
   "js/20-mission.js",
@@ -78,4 +79,40 @@ test("Local split-screen has separate controls, cameras and a shared mission", a
   assert.match(loop, /R\.render\(S,C2\)/);
   assert.match(html, /id="go3"/);
   assert.match(html, /id="splitDivider"/);
+});
+
+
+test("Driving rules move two player states independently", async () => {
+  const source = await readFile(new URL("../public/city-courier/js/05-driving-rules.js", import.meta.url), "utf8");
+  const context = {};
+  runInNewContext(source, context);
+  const rules = context.CourierDriving;
+  const first = { x: 0, z: 0, h: 0, v: 0 };
+  const second = { x: 20, z: 20, h: 0, v: 0 };
+
+  rules.stepVehicle(first, { up: 1 }, 0.5, 24);
+  assert.equal(first.v, 11);
+  assert.equal(first.z, 5.5);
+  assert.equal(second.x, 20);
+  assert.equal(second.z, 20);
+
+  rules.stepVehicle(second, { up: 1, right: 1 }, 0.5, 24);
+  assert.equal(first.x, 0);
+  assert.notEqual(second.h, 0);
+  assert.ok(second.x < 20);
+});
+
+test("Driving rules clamp speed and separate overlapping local players", async () => {
+  const source = await readFile(new URL("../public/city-courier/js/05-driving-rules.js", import.meta.url), "utf8");
+  const context = {};
+  runInNewContext(source, context);
+  const rules = context.CourierDriving;
+  const vehicle = { x: 0, z: 0, h: 0, v: 100 };
+  rules.stepVehicle(vehicle, { up: 1 }, 1, 24);
+  assert.equal(vehicle.v, 24);
+
+  const p1 = { x: 0, z: 0 }, p2 = { x: 1, z: 0 };
+  assert.equal(rules.separatePlayers(p1, p2, 3.4), true);
+  assert.ok(Math.hypot(p2.x - p1.x, p2.z - p1.z) >= 3.399);
+  assert.equal(rules.separatePlayers(p1, p2, 3.4), false);
 });
