@@ -28,7 +28,7 @@ addEventListener('keydown',e=>{
  if(e.code==='Digit1')selectWeapon(0);if(e.code==='Digit2')selectWeapon(1);if(e.code==='Digit3')selectWeapon(2);
  if(e.code==='Enter'&&G.state!=='play'&&!$('go').disabled){if(splitMode)startSplit();else start(false)}
 });
-addEventListener('keyup',e=>{if(kmap[e.code])keys[kmap[e.code]]=0;if(p2map[e.code])keys2[p2map[e.code]]=0});
+addEventListener('keyup',e=>{const map=splitMode?p1map:kmap;if(map[e.code])keys[map[e.code]]=0;if(splitMode&&p2map[e.code])keys2[p2map[e.code]]=0});
 addEventListener('blur',()=>{Object.assign(keys,{up:0,down:0,left:0,right:0});Object.assign(keys2,{up:0,down:0,left:0,right:0})});
 document.querySelectorAll('[data-k]').forEach(b=>{const k=b.dataset.k;b.addEventListener('pointerdown',e=>{keys[k]=1;e.preventDefault()});
  ['pointerup','pointerleave','pointercancel'].forEach(t=>b.addEventListener(t,()=>keys[k]=0))});
