@@ -45,3 +45,13 @@ test("City Courier entry page does not load the retired monolithic runtime", asy
   const html = await readFile(new URL("index.html", gameRoot), "utf8");
   assert.equal(html.includes('src="./game.js"'), false);
 });
+
+
+test("Street lamps are connected to the day/night cycle", async () => {
+  const city = await readFile(new URL("../public/city-courier/js/10-city.js", import.meta.url), "utf8");
+  const world = await readFile(new URL("../public/city-courier/js/40-open-world.js", import.meta.url), "utf8");
+  assert.match(city, /streetLights=\[\]/);
+  assert.match(city, /new THREE\.PointLight\(0xffd09a,0,21,2\)/);
+  assert.match(world, /streetLights\.forEach/);
+  assert.match(world, /light\.intensity=night\*1\.65/);
+});

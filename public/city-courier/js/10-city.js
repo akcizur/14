@@ -1,5 +1,5 @@
 // ---- město
-const col=[],blocks=[];
+const col=[],blocks=[],streetLights=[];
 function buildCity(){
  const gnd=new THREE.Mesh(new THREE.PlaneGeometry(560,560),new THREE.MeshStandardMaterial({color:0x30343a,roughness:.95}));gnd.rotation.x=-Math.PI/2;gnd.receiveShadow=true;S.add(gnd);
  const dm=new THREE.InstancedMesh(new THREE.PlaneGeometry(1.2,4),new THREE.MeshBasicMaterial({color:0xe8e8d0}),600);let n=0;const mt=new THREE.Matrix4(),q=new THREE.Quaternion(),e=new THREE.Euler();
@@ -14,7 +14,25 @@ function buildCity(){
    const g=fit(names[Math.floor(Math.random()*names.length)],11,cols[Math.floor(Math.random()*4)]);{const hb=new THREE.Box3().setFromObject(g).getSize(new THREE.Vector3()).y;g.scale.y=Math.min(1,rnd(10,20)/hb)}g.position.set(cx+ox,.3,cz+oz);g.rotation.y=Math.floor(Math.random()*4)*Math.PI/2;S.add(g);
    col.push({x:cx+ox,z:cz+oz,hw:5.5,hd:5.5})}
   if(Math.random()<.7){const t=fit('Tree',4,0x2f8f3a);t.position.set(cx+(Math.random()<.5?-12.5:12.5),.3,cz+rnd(-12,12));S.add(t)}
- }}
+ }
+ // Compact street lamps are placed on alternating block corners.
+ for(let i=0;i<N;i+=2)for(let j=0;j<N;j+=2){
+  const x=(i-3.5)*P+18.2,z=(j-3.5)*P+18.2;
+  const group=new THREE.Group();
+  const metal=new THREE.MeshStandardMaterial({color:0x27313b,metalness:.65,roughness:.48});
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(.065,.095,4.5,8),metal);
+  pole.position.y=2.25;pole.castShadow=true;group.add(pole);
+  const arm=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,.85,8),metal);
+  arm.rotation.z=Math.PI/2;arm.position.set(.38,4.25,0);group.add(arm);
+  const bulbMaterial=new THREE.MeshBasicMaterial({color:0x3b4148});
+  const bulb=new THREE.Mesh(new THREE.SphereGeometry(.13,8,6),bulbMaterial);
+  bulb.position.set(.79,4.25,0);group.add(bulb);
+  const light=new THREE.PointLight(0xffd09a,0,21,2);
+  light.position.copy(bulb.position);group.add(light);
+  group.position.set(x,0,z);S.add(group);
+  streetLights.push({light,bulbMaterial});
+ }
+}
 function collide(p,r){let hit=false;
  for(const c of col){const dx=p.x-c.x,dz=p.z-c.z;if(Math.abs(dx)>c.hw+r||Math.abs(dz)>c.hd+r)continue;
   const nx=clamp(dx,-c.hw,c.hw),nz=clamp(dz,-c.hd,c.hd),ex=dx-nx,ez=dz-nz,d2=ex*ex+ez*ez;

@@ -13,6 +13,10 @@ function dayApply(){
  S.background=sky;S.fog.color.copy(sky);hemi.intensity=.22+.78*day;sun.intensity=1.2*day;
  sunO=[Math.cos(angle)*80,Math.max(8,el*100),30];
  const night=1-day;
+ streetLights.forEach(({light,bulbMaterial})=>{
+  light.intensity=night*1.65;
+  bulbMaterial.color.setRGB(.23+.77*night,.25+.57*night,.29+.34*night);
+ });
  carModels.forEach(car=>{
   car.userData.headlights.forEach(light=>{light.visible=night>.28});
   car.userData.taillights.forEach(light=>{light.visible=night>.28});
